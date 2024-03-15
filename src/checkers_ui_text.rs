@@ -1,4 +1,7 @@
 use crate::checkers_ui::CheckersUi;
+use crate::board::BoardContent;
+use crate::board::BoardObserver;
+
 
 
 const WHITE_MAN: char = '\u{26C0}';
@@ -25,13 +28,34 @@ fn print_empty_board() {
     }
 }
 
+
 pub struct CheckersUiText {
     // fields go here
 }
+
+impl CheckersUiText {
+    pub fn new() -> CheckersUiText {
+        CheckersUiText {
+            // fields go here
+        }
+    }
+}
+
+
+impl BoardObserver for CheckersUiText {
+    fn update(&self, bc: &BoardContent) {
+        self.draw_board(bc);
+    }
+}
+
 
 impl CheckersUi for CheckersUiText {
     fn splash_screen(&self) {
         println!("SM-Checkers v{} - {} {} {} {}",  env!("CARGO_PKG_VERSION"), WHITE_MAN, BLACK_MAN, WHITE_KNIGHT, BLACK_KNIGHT);
         print_empty_board();
    }
+
+    fn draw_board(&self, bc: &BoardContent) {
+        print_empty_board();
+    }
 }

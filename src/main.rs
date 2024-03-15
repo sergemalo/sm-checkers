@@ -1,5 +1,11 @@
+use std::borrow::Borrow;
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use crate::checkers_ui::CheckersUi;
+use crate::checkers_ui_text::CheckersUiText;
 use crate::board::Board;
+use crate::board::Subject;
 
 pub mod board;
 pub mod checkers_ui;
@@ -9,13 +15,15 @@ pub mod checkers_ui_text;
 fn main() {
 
 
+    let gui = Rc::new(RefCell::new(CheckersUiText::new()));
 
-    let gui = checkers_ui_text::CheckersUiText {};
-    gui.splash_screen();
+    gui.borrow_mut().splash_screen();
 
     // Create game
     // Create Board
     let mut board = Board::new();
+    board.register_observer(gui.clone());
+    board.doit();
     board.doit();
     // Create UI
     // Create Players

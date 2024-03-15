@@ -10,7 +10,7 @@ enum TileState {
 }
 
 #[derive(Debug)]
-struct BoardContent {
+pub struct BoardContent {
     tiles: [TileState; 32]
 }
 
@@ -29,12 +29,12 @@ impl BoardContent {
 }
 
 // Define the Observer trait
-trait BoardObserver {
-    fn update(&self, b: &BoardContent);
+pub trait BoardObserver {
+    fn update(&self, bc: &BoardContent);
 }
 
 // Define the Subject trait
-trait Subject {
+pub trait Subject {
     fn register_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>);
     fn remove_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>);
     fn notify_observers(&self);

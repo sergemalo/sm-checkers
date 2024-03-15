@@ -42,7 +42,6 @@ pub trait Subject {
 
 pub struct Board {
     observers: Vec<Rc<RefCell<dyn BoardObserver>>>,
-    board_name: String,
     board_tiles: BoardContent
 }
 
@@ -50,7 +49,6 @@ impl Board {
     pub fn new() -> Self {
         Board {
         observers: Vec::new(),
-        board_name: String::from("ZE Board"),
         board_tiles: BoardContent::new()
         }
     }

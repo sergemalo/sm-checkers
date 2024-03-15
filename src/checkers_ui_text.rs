@@ -1,7 +1,11 @@
+extern crate ansi_term;
+
+use ansi_term::Colour::Red;
+
 use crate::checkers_ui::CheckersUi;
 use crate::board::BoardContent;
 use crate::board::BoardObserver;
-use crate::board::TileState;
+
 
 
 
@@ -9,12 +13,13 @@ const WHITE_MAN: char = '\u{26C0}';
 const WHITE_KNIGHT: char = '\u{26C1}';
 const BLACK_MAN: char = '\u{26C2}';
 const BLACK_KNIGHT: char = '\u{26C3}';
-const BLACK_SQUARE: char = '\u{2BC0}';
+//const BLACK_SQUARE: char = '\u{2BC0}';
 const WHITE_SQUARE: char = '\u{2610}';
+const EMPTY_TILE: char = ' ';
 
 fn print_empty_board() {
-    let l0 = String::from(format!("| {} | {} ", BLACK_SQUARE, WHITE_SQUARE));
-    let l1 = String::from(format!("| {} | {} ", WHITE_SQUARE, BLACK_SQUARE));
+    let l0 = String::from(format!("| {} | {} ", EMPTY_TILE, WHITE_SQUARE));
+    let l1 = String::from(format!("| {} | {} ", WHITE_SQUARE, EMPTY_TILE));
     let mut line0 = String::new();
     let mut line1 = String::new();
     for _ in 0..4 {
@@ -43,20 +48,20 @@ impl CheckersUiText {
 
     fn print_tile(&self, ts: &crate::board::TileState) {
         match ts {
+            crate::board::TileState::Empty => {
+                print!("{} ", WHITE_SQUARE);
+            }
             crate::board::TileState::RedMan => {
-                print!("{} ", WHITE_MAN);
+                print!("{} ", Red.paint(WHITE_MAN.to_string()));
             }
             crate::board::TileState::RedKnight => {
-                print!("{} ", WHITE_KNIGHT);
+                print!("{} ", Red.paint(WHITE_KNIGHT.to_string()));
             }
             crate::board::TileState::BlackMan => {
                 print!("{} ", BLACK_MAN);
             }
             crate::board::TileState::BlackKnight => {
                 print!("{} ", BLACK_KNIGHT);
-            }
-            _ => {
-                print!("{} ", BLACK_SQUARE);
             }
         }
     }
@@ -77,11 +82,12 @@ impl CheckersUi for CheckersUiText {
    }
 
     fn draw_board(&self, bc: &BoardContent) {
+        println!("");
         for i in 0..64 {
             print!("| ");
             if (i / 8) % 2 == 0 {
                 if i % 2 == 0 {
-                    print!("{} ", WHITE_SQUARE);
+                    print!("{} ", EMPTY_TILE);
                 }
                 else {
                     self.print_tile(&bc.tiles[i/2]);
@@ -89,7 +95,7 @@ impl CheckersUi for CheckersUiText {
             }
             else {
                 if i % 2 == 1 {
-                    print!("{} ", WHITE_SQUARE);
+                    print!("{} ", EMPTY_TILE);
                 }
                 else {
                     self.print_tile(&bc.tiles[i/2]);

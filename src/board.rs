@@ -1,17 +1,17 @@
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug, Copy, Clone)]
-enum TileState {
+pub enum TileState {
     Empty,
     RedMan,
-    RedKing,
+    RedKnight,
     BlackMan,
-    BlackKing
+    BlackKnight
 }
 
 #[derive(Debug)]
 pub struct BoardContent {
-    tiles: [TileState; 32]
+    pub tiles: [TileState; 32]
 }
 
 

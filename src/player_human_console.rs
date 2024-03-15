@@ -6,17 +6,19 @@ use std::io::Write;
 use crate::player_trait::{Player, PlayerAction};
 
 
-pub struct PlayerHumanConsole<'a> {
-    name: &'a str,
+pub struct PlayerHumanConsole {
+    name: String,
 }
 
-impl<'a> PlayerHumanConsole<'a> {
-    pub fn new(name: &'a str) -> Self {
-        Self { name }
+impl PlayerHumanConsole {
+    pub fn new(name_in: & str) -> Self {
+        PlayerHumanConsole {
+            name: name_in.to_owned()
+        }
     }
 }
 
-impl<'a> Player for PlayerHumanConsole<'a> {
+impl Player for PlayerHumanConsole {
     fn play_turn(&self) -> &PlayerAction {
         println!("{}'s turn: quit (q) or move:", self.name);
 

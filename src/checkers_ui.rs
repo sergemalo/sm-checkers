@@ -1,4 +1,4 @@
-use crate::board::BoardContent;
+use crate::board_content::BoardContent;
 
 pub trait CheckersUi {
     fn splash_screen(&self);

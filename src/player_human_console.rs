@@ -4,6 +4,7 @@ use std::io;
 use std::io::Write;
 
 use crate::player_trait::{Player, PlayerAction};
+use crate::board_content::*;
 
 
 pub struct PlayerHumanConsole {
@@ -32,4 +33,11 @@ impl Player for PlayerHumanConsole {
             _ => &PlayerAction::Move,
         }
     }
+}
+
+impl BoardObserver for PlayerHumanConsole {
+    fn update(&self, bc: &BoardContent) {
+        println!("{} - Received new board", self.name);
+    }
+
 }

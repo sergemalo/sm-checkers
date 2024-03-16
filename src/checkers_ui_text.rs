@@ -3,10 +3,7 @@ extern crate ansi_term;
 use ansi_term::Colour::Red;
 
 use crate::checkers_ui::CheckersUi;
-use crate::board::BoardContent;
-use crate::board::BoardObserver;
-
-
+use crate::board_content::*;
 
 
 const WHITE_MAN: char = '\u{26C0}';
@@ -46,21 +43,21 @@ impl CheckersUiText {
         }
     }
 
-    fn print_tile(&self, ts: &crate::board::TileState) {
+    fn print_tile(&self, ts: &TileState) {
         match ts {
-            crate::board::TileState::Empty => {
+            TileState::Empty => {
                 print!("{} ", WHITE_SQUARE);
             }
-            crate::board::TileState::RedMan => {
+            TileState::RedMan => {
                 print!("{} ", Red.paint(WHITE_MAN.to_string()));
             }
-            crate::board::TileState::RedKnight => {
+            TileState::RedKnight => {
                 print!("{} ", Red.paint(WHITE_KNIGHT.to_string()));
             }
-            crate::board::TileState::BlackMan => {
+            TileState::BlackMan => {
                 print!("{} ", BLACK_MAN);
             }
-            crate::board::TileState::BlackKnight => {
+            TileState::BlackKnight => {
                 print!("{} ", BLACK_KNIGHT);
             }
         }

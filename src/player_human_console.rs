@@ -3,8 +3,9 @@
 use std::io;
 use std::io::Write;
 
-use crate::player_trait::{Player, PlayerAction};
+use crate::player_trait::Player;
 use crate::board_content::*;
+use crate::game_actions::*;
 
 
 pub struct PlayerHumanConsole {
@@ -20,7 +21,7 @@ impl PlayerHumanConsole {
 }
 
 impl Player for PlayerHumanConsole {
-    fn play_turn(&self) -> &PlayerAction {
+    fn play_turn(&self) -> Box<dyn GameAction> {
         println!("{}'s turn: quit (q) or move:", self.name);
 
         let mut input = String::new();
@@ -29,8 +30,14 @@ impl Player for PlayerHumanConsole {
         io::stdin().read_line(&mut input).expect("Failed to read Action from Player");
         
         match input.trim().to_lowercase().as_str() {
-            "q" => &PlayerAction::Quit,
-            _ => &PlayerAction::Move,
+            "q" => {
+                let action = ActionQuit::new();
+                return Box::new(action);
+            }
+            _ => {
+                let action = ActionMove::new();
+                return Box::new(action);
+            }
         }
     }
 }

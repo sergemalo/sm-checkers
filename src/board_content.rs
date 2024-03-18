@@ -1,3 +1,9 @@
+#[derive(Debug, Clone, Copy)]
+pub enum PlayerColor {
+    Red,
+    Black
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum TileState {
     Empty,

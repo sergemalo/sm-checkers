@@ -26,6 +26,10 @@ impl Board {
     pub fn doit(&self) {
         self.notify_observers();
     }
+
+    pub fn is_game_over(&self) -> bool {
+        true
+    }
 }
 
 
@@ -47,4 +51,19 @@ impl Subject for Board {
             observer.borrow().update(&self.board_tiles);
         }
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_game_over() {
+        let board = Board::new();
+        // perform some operations on the board
+        assert_eq!(board.is_game_over(), false);
+    }
+
+    // more tests
 }

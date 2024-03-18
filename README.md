@@ -1,5 +1,8 @@
 # Checkers Game by Serge Malo
 
+Rules:
+https://www.usatoday.com/story/graphics/2023/01/23/how-to-play-checkers-rules-strategy/10795787002/
+
 This project will help me to learn and pratice the following this
 
 1. Rust language programming

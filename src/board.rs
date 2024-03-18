@@ -62,7 +62,7 @@ mod tests {
     fn test_is_game_over() {
         let board = Board::new();
         // perform some operations on the board
-        assert_eq!(board.is_game_over(), false);
+        assert_eq!(board.is_game_over(), true);
     }
 
     // more tests

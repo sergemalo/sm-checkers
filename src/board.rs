@@ -12,14 +12,14 @@ pub trait Subject {
 
 pub struct Board {
     observers: Vec<Rc<RefCell<dyn BoardObserver>>>,
-    board_tiles: BoardContent
+    bc: BoardContent
 }
 
 impl Board {
     pub fn new() -> Self {
         Board {
         observers: Vec::new(),
-        board_tiles: BoardContent::new()
+        bc: BoardContent::new()
         }
     }
 
@@ -27,9 +27,39 @@ impl Board {
         self.notify_observers();
     }
 
-    pub fn is_game_over(&self) -> bool {
-        false
+    pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
+        // Check if player has pieces
+        if next_player_color == PlayerColor::Black {
+            let mut tile_count = 0;
+            for tile in self.bc.tiles.iter() {
+                if *tile == TileState::BlackMan {
+                    tile_count += 1;
+                }
+                if *tile == TileState::BlackKnight {
+                    tile_count += 1;
+                }
+            }
+            if tile_count == 0 {
+                return true
+            }
+        } else if next_player_color == PlayerColor::Red {
+            let mut tile_count = 0;
+            for tile in self.bc.tiles.iter() {
+                
+                if *tile == TileState::RedMan {
+                    tile_count += 1;
+                }
+                if *tile == TileState::RedKnight {
+                    tile_count += 1;
+                }
+            }
+            if tile_count == 0 {
+                return true
+            }
+        }
+        return false
     }
+
 }
 
 
@@ -48,7 +78,7 @@ impl Subject for Board {
 
     fn notify_observers(&self) {
         for observer in self.observers.iter() {
-            observer.borrow().update(&self.board_tiles);
+            observer.borrow().update(&self.bc);
         }
     }
 }
@@ -60,9 +90,40 @@ mod tests {
 
     #[test]
     fn test_is_game_over() {
-        let board = Board::new();
-        // perform some operations on the board
-        assert_eq!(board.is_game_over(), false);
+        let mut board = Board::new();
+
+        // Test #1: default board
+        assert_eq!(board.is_game_over(PlayerColor::Black), false);
+        assert_eq!(board.is_game_over(PlayerColor::Red), false);
+
+        // Test #2: empty board: game is over
+        board.bc.tiles.fill(TileState::Empty);
+        assert_eq!(board.is_game_over(PlayerColor::Black), true);
+        assert_eq!(board.is_game_over(PlayerColor::Red), true);
+
+        // Test #3: Only one man blocked
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[4] = TileState::RedMan;
+        board.bc.tiles[5] = TileState::RedMan;
+        board.bc.tiles[9] = TileState::RedMan;
+        assert_eq!(board.is_game_over(PlayerColor::Black), true);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[1] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::RedMan;
+        board.bc.tiles[6] = TileState::RedMan;
+        board.bc.tiles[8] = TileState::RedMan;
+        board.bc.tiles[10] = TileState::RedMan;
+        assert_eq!(board.is_game_over(PlayerColor::Black), true);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[7] = TileState::RedMan;
+        board.bc.tiles[10] = TileState::RedMan;
+        assert_eq!(board.is_game_over(PlayerColor::Black), true);
+
+
     }
 
     // more tests

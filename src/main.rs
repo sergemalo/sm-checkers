@@ -11,7 +11,7 @@ use crate::player_trait::Player;
 use crate::player_human_console::PlayerHumanConsole;
 use crate::cyclic_iterator::CyclicIterator;
 
-use crate::game_actions::*;
+//use crate::game_actions::*;
 
 use crate::board_content::PlayerColor;
 
@@ -43,13 +43,19 @@ fn main() {
 
 
     // Add UI and Players to the Board's Observers
+    // TODO: NOT SURE ABOUT THIS - CLONE ?
     board.register_observer(gui.clone());
-    board.register_observer(Rc::new(RefCell::new(players[0].clone()))); // TODO: NOT SURE ABOUT THIS - CLONE ?
+    board.register_observer(Rc::new(RefCell::new(players[0].clone()))); 
     board.register_observer(Rc::new(RefCell::new(players[1].clone())));
     board.doit();
 
     let mut players_cyclic_iter = CyclicIterator::new(&players);
     for player in players_cyclic_iter.by_ref() {
+        if board.is_game_over((*player).get_color()) {
+            println!("{} has lost!", (*player).get_name());
+            println!("{} has won!", (players_cyclic_iter.next()).unwrap().get_name());
+            break;
+        }
         
         println!("{}'s turn - You have the {:?} pieces", (*player).get_name(), (*player).get_color());
 
@@ -63,9 +69,6 @@ fn main() {
                 println!("Bye!");
                 std::process::exit(0);
             }
-        }
-        if board.is_game_over() {
-            break;
         }
     }
 

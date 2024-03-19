@@ -1,5 +1,3 @@
-//mod player_trait;
-
 use std::io;
 use std::io::Write;
 
@@ -51,7 +49,7 @@ impl Player for PlayerHumanConsole {
 }
 
 impl BoardObserver for PlayerHumanConsole {
-    fn update(&self, bc: &BoardContent) {
+    fn update(&self, _bc: &BoardContent) {
         println!("{} - Received new board", self.name);
     }
 

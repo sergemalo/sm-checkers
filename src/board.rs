@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::board_content::*;
+use crate::move_piece::*;
 
 
 // Define the Subject trait
@@ -28,36 +29,55 @@ impl Board {
     }
 
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
-        // Check if player has pieces
-        if next_player_color == PlayerColor::Black {
-            let mut tile_count = 0;
-            for tile in self.bc.tiles.iter() {
-                if *tile == TileState::BlackMan {
-                    tile_count += 1;
-                }
-                if *tile == TileState::BlackKnight {
-                    tile_count += 1;
-                }
-            }
-            if tile_count == 0 {
-                return true
-            }
-        } else if next_player_color == PlayerColor::Red {
-            let mut tile_count = 0;
-            for tile in self.bc.tiles.iter() {
-                
-                if *tile == TileState::RedMan {
-                    tile_count += 1;
-                }
-                if *tile == TileState::RedKnight {
-                    tile_count += 1;
-                }
-            }
-            if tile_count == 0 {
-                return true
+        let pieces = self.get_player_pieces_indexes(next_player_color);
+        for (i, _p) in pieces.iter().enumerate(){
+            if self.get_possible_moves(i).is_some() {
+                return false
             }
         }
-        return false
+        return true
+    }
+
+    fn get_player_pieces_indexes(&self, player_color: PlayerColor) -> Vec<usize> {
+        let mut player_pieces_indexes = Vec::new();
+        for (i, tile) in self.bc.tiles.iter().enumerate() {
+            if (player_color == PlayerColor::Black && (*tile == TileState::BlackMan || *tile == TileState::BlackKnight)) || 
+               (player_color == PlayerColor::Red && (*tile == TileState::RedMan || *tile == TileState::RedKnight)) {
+                player_pieces_indexes.push(i);
+            }
+        }
+        return player_pieces_indexes
+    }
+
+    /*
+    fn can_move(&self, index: usize) -> bool {
+        match self.bc.tiles[index] {
+            TileState::BlackMan => self.can_move_black_man(index),
+            TileState::BlackKnight => self.can_move_black_knight(index),
+            TileState::RedMan => self.can_move_red_man(index),
+            TileState::RedKnight => self.can_move_red_knight(index),
+            _ => false
+        }
+    }
+
+    fn can_move_black_man(&self, index: usize) -> bool {
+        if index < 9 {
+            return false
+        }
+        if index % 9 == 0 {
+            return false
+        }
+        if index % 9 == 8 {
+            return false
+        }
+        return true
+    }
+    */
+    pub fn get_possible_moves(&self, index: usize) -> Option<Vec<Move>> {
+        if index > 31 {
+            panic!("Board::get_possible_movesIndex out of bounds");
+        }
+        return None
     }
 
 }
@@ -122,6 +142,43 @@ mod tests {
         board.bc.tiles[7] = TileState::RedMan;
         board.bc.tiles[10] = TileState::RedMan;
         assert_eq!(board.is_game_over(PlayerColor::Black), true);
+
+
+    }
+
+    #[test]
+    fn test_get_possible_moves() {
+        let mut board = Board::new();
+
+        // Test #1: default board
+        for i in 0..8 {
+            assert_eq!(board.get_possible_moves(i), None);
+        }
+        for i in 12..20 {
+            assert_eq!(board.get_possible_moves(i), None);
+        }
+        for i in 16..32 {
+            assert_eq!(board.get_possible_moves(i), None);
+        }
+        let test_cases = [
+            (8, vec![12, 13]),
+            (9, vec![13, 14]),
+            (10, vec![14, 15]),
+            (11, vec![15]), // Note that (11, vec![15]) has only one move.
+            (20, vec![16]), // Note that (20, vec![16]) has only one move.
+            (21, vec![16, 17]),
+            (22, vec![17, 18]),
+            (23, vec![18, 19]),
+        ];        
+        for &(start, ref expected_moves) in &test_cases {
+            let moves = board.get_possible_moves(start).expect("Expected Some, got None");
+            assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for position {}", start);
+        
+            for &to in expected_moves {
+                assert!(moves.contains(&Move::new(start, to)), "Move from {} to {} not found", start, to);
+            }
+        }
+ 
 
 
     }

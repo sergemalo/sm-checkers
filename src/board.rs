@@ -35,6 +35,11 @@ impl Board {
                 return false
             }
         }
+        for (i, _p) in pieces.iter().enumerate(){
+            if self.get_possible_jumps(i).is_some() {
+                return false
+            }
+        }
         return true
     }
 
@@ -75,7 +80,13 @@ impl Board {
     */
     pub fn get_possible_moves(&self, index: usize) -> Option<Vec<Move>> {
         if index > 31 {
-            panic!("Board::get_possible_movesIndex out of bounds");
+            panic!("Board::get_possible_moves: Index out of bounds");
+        }
+        return None
+    }
+    pub fn get_possible_jumps(&self, index: usize) -> Option<Vec<Jump>> {
+        if index > 31 {
+            panic!("Board::get_possible_jumps: Index out of bounds");
         }
         return None
     }
@@ -179,6 +190,46 @@ mod tests {
             }
         }
  
+        // Test #2: only one BlackMan at index 0
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
+        assert_eq!(moves.len(), 2, "Mismatch in number of moves for position 0");
+        assert!(moves.contains(&Move::new(0, 4)), "Move from {} to {} not found", 0, 4);
+        assert!(moves.contains(&Move::new(0, 5)), "Move from {} to {} not found", 0, 5);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[4] = TileState::BlackMan;
+        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
+        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
+        assert!(moves.contains(&Move::new(0, 5)), "Move from {} to {} not found", 0, 5);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::BlackMan;
+        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
+        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
+        assert!(moves.contains(&Move::new(0, 4)), "Move from {} to {} not found", 0, 4);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[4] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::BlackMan;
+        assert_eq!(board.get_possible_moves(0), None);
+
+        // Test #3: only one BlackMan at index 3
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[3] = TileState::BlackMan;
+        let moves = board.get_possible_moves(3).expect("Expected Some, got None");
+        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
+        assert!(moves.contains(&Move::new(3, 7)), "Move from {} to {} not found", 0, 4);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[7] = TileState::BlackMan;
+        assert_eq!(board.get_possible_moves(0), None);        
+
 
 
     }

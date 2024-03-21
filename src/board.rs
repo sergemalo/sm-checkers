@@ -189,48 +189,78 @@ mod tests {
                 assert!(moves.contains(&Move::new(start, to)), "Move from {} to {} not found", start, to);
             }
         }
+    }
+
+    fn setup_board_with_black_man(board: &mut Board, index: usize) {
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[index] = TileState::BlackMan;
+    }
+    
+    fn assert_moves(board: &Board, index: usize, expected_moves: &[(usize, usize)]) {
+        let moves = board.get_possible_moves(index).expect("Expected Some, got None");
+        assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for Black Man at index {}", index);
+    
+        for &(from, to) in expected_moves {
+            assert!(moves.contains(&Move::new(from, to)), "Move from {} to {} not found", from, to);
+        }
+    }
+
+    #[test]
+    fn test_get_possible_moves_bm() {
+        let mut board = Board::new();
  
-        // Test #2: only one BlackMan at index 0
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[0] = TileState::BlackMan;
-        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
-        assert_eq!(moves.len(), 2, "Mismatch in number of moves for position 0");
-        assert!(moves.contains(&Move::new(0, 4)), "Move from {} to {} not found", 0, 4);
-        assert!(moves.contains(&Move::new(0, 5)), "Move from {} to {} not found", 0, 5);
-
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[0] = TileState::BlackMan;
+        let index = 0;
+        setup_board_with_black_man(&mut board, index);
+        assert_moves(&board, index, &[(index, 4), (index, 5)]);
+        
+        setup_board_with_black_man(&mut board, index);
         board.bc.tiles[4] = TileState::BlackMan;
-        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
-        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
-        assert!(moves.contains(&Move::new(0, 5)), "Move from {} to {} not found", 0, 5);
+        assert_moves(&board, index, &[(index, 5)]);
 
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[0] = TileState::BlackMan;
+        setup_board_with_black_man(&mut board, index);
         board.bc.tiles[5] = TileState::BlackMan;
-        let moves = board.get_possible_moves(0).expect("Expected Some, got None");
-        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
-        assert!(moves.contains(&Move::new(0, 4)), "Move from {} to {} not found", 0, 4);
+        assert_moves(&board, index, &[(index, 4)]);
 
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[0] = TileState::BlackMan;
+        setup_board_with_black_man(&mut board, index);
         board.bc.tiles[4] = TileState::BlackMan;
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_eq!(board.get_possible_moves(0), None);
+        assert_moves(&board, index, &[]);
 
-        // Test #3: only one BlackMan at index 3
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[3] = TileState::BlackMan;
-        let moves = board.get_possible_moves(3).expect("Expected Some, got None");
-        assert_eq!(moves.len(), 1, "Mismatch in number of moves for position 0");
-        assert!(moves.contains(&Move::new(3, 7)), "Move from {} to {} not found", 0, 4);
 
-        board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[3] = TileState::BlackMan;
+        let index = 3;
+        setup_board_with_black_man(&mut board, index);
+        assert_moves(&board, index, &[(index, 4)]);
+
+        setup_board_with_black_man(&mut board, index);
         board.bc.tiles[7] = TileState::BlackMan;
-        assert_eq!(board.get_possible_moves(0), None);        
+        assert_moves(&board, index, &[]);
 
 
+        let index = 20;
+        setup_board_with_black_man(&mut board, index);
+        assert_moves(&board, index, &[(index, 24)]);
+
+        setup_board_with_black_man(&mut board, index);
+        board.bc.tiles[24] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+
+        let index = 23;
+        setup_board_with_black_man(&mut board, index);
+        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        
+        setup_board_with_black_man(&mut board, 0);
+        board.bc.tiles[26] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 27)]);
+
+        setup_board_with_black_man(&mut board, index);
+        board.bc.tiles[27] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 26)]);
+
+        setup_board_with_black_man(&mut board, index);
+        board.bc.tiles[26] = TileState::BlackMan;
+        board.bc.tiles[27] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
 
     }
 

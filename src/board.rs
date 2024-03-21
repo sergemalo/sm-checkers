@@ -191,9 +191,9 @@ mod tests {
         }
     }
 
-    fn setup_board_with_black_man(board: &mut Board, index: usize) {
+    fn setup_board_with_one_piece(board: &mut Board, index: usize, state: TileState) {
         board.bc.tiles.fill(TileState::Empty);
-        board.bc.tiles[index] = TileState::BlackMan;
+        board.bc.tiles[index] = state;
     }
     
     fn assert_moves(board: &Board, index: usize, expected_moves: &[(usize, usize)]) {
@@ -210,59 +210,212 @@ mod tests {
         let mut board = Board::new();
  
         let index = 0;
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         assert_moves(&board, index, &[(index, 4), (index, 5)]);
         
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[4] = TileState::BlackMan;
         assert_moves(&board, index, &[(index, 5)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[5] = TileState::BlackMan;
         assert_moves(&board, index, &[(index, 4)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[4] = TileState::BlackMan;
         board.bc.tiles[5] = TileState::BlackMan;
         assert_moves(&board, index, &[]);
 
 
         let index = 3;
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         assert_moves(&board, index, &[(index, 4)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[7] = TileState::BlackMan;
         assert_moves(&board, index, &[]);
 
 
         let index = 20;
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         assert_moves(&board, index, &[(index, 24)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[24] = TileState::BlackMan;
         assert_moves(&board, index, &[]);
 
 
         let index = 23;
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         assert_moves(&board, index, &[(index, 26), (index, 27)]);
         
-        setup_board_with_black_man(&mut board, 0);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[26] = TileState::BlackMan;
         assert_moves(&board, index, &[(index, 27)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[27] = TileState::BlackMan;
         assert_moves(&board, index, &[(index, 26)]);
 
-        setup_board_with_black_man(&mut board, index);
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[26] = TileState::BlackMan;
         board.bc.tiles[27] = TileState::BlackMan;
         assert_moves(&board, index, &[]);
 
     }
+
+    #[test]
+    fn test_get_possible_moves_bk() {
+        let mut board = Board::new();
+
+        let index = 0;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 4), (index, 5)]);
+        
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[4] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 5)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[5] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 4)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[4] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+
+        let index = 3;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 4)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[7] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);        
+
+
+        let index = 4;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 0), (index, 8)]);
+        
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[0] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 8)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[8] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 0)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[8] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+
+        let index = 7;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 2), (index, 3), (index, 10), (index, 11)]);
+        
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 3), (index, 10), (index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[3] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 2), (index, 10), (index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 10), (index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 3), (index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 3), (index, 10)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 2), (index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 2), (index, 10)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 2), (index, 3)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 10)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 3)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 2)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+
+        let index = 28;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 24)]);
+        
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[24] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+
+        let index = 31;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[26] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 27)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[27] = TileState::BlackMan;
+        assert_moves(&board, index, &[(index, 26)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[26] = TileState::BlackMan;
+        board.bc.tiles[27] = TileState::BlackMan;
+        assert_moves(&board, index, &[]);
+
+    }
+ 
+
 
     // more tests
 }

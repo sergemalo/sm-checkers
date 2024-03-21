@@ -31,12 +31,12 @@ impl Board {
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
         let pieces = self.get_player_pieces_indexes(next_player_color);
         for (i, _p) in pieces.iter().enumerate(){
-            if self.get_possible_moves(i).is_some() {
+            if self.get_possible_moves(i).len() > 0 {
                 return false
             }
         }
         for (i, _p) in pieces.iter().enumerate(){
-            if self.get_possible_jumps(i).is_some() {
+            if self.get_possible_jumps(i).len() > 0 {
                 return false
             }
         }
@@ -54,17 +54,101 @@ impl Board {
         return player_pieces_indexes
     }
 
-    pub fn get_possible_moves(&self, index: usize) -> Option<Vec<Move>> {
+    pub fn get_possible_moves(&self, index: usize) -> Vec<Move> {
         if index > 31 {
             panic!("Board::get_possible_moves: Index out of bounds");
         }
-        return None
+        match self.bc.tiles[index] {
+            TileState::BlackMan => {
+                return self.get_possible_moves_for_piece(index, TileState::BlackMan);
+            }
+            TileState::BlackKnight | TileState::RedKnight => {
+                let mut moves: Vec<Move>  = vec![];
+                let mut moves2 = self.get_possible_moves_for_piece(index, TileState::BlackMan);
+                moves.append(&mut moves2);
+                let mut moves3 = self.get_possible_moves_for_piece(index, TileState::RedMan);
+                moves.append(&mut moves3);
+                return moves;
+            }
+            TileState::RedMan => {
+                return self.get_possible_moves_for_piece(index, TileState::RedMan);
+            }
+            _ => {
+                return vec![];
+            }
+        }
     }
-    pub fn get_possible_jumps(&self, index: usize) -> Option<Vec<Jump>> {
+
+    fn get_possible_moves_for_piece(&self, index: usize, state: TileState) -> Vec<Move> {
+        match state {
+            TileState::BlackMan => {
+                if index > 27 {
+                    return vec![];
+                }
+                if ((index % 8) == 3) || ((index % 8) == 4) {
+                    if self.bc.tiles[index+4] == TileState::Empty {
+                        return vec![Move::new(index, index+4)];
+                    }
+                    return vec![];
+                }
+                else {
+                    let mut moves = vec![];
+                    if (index % 8) > 3 {
+                        if self.bc.tiles[index+3] == TileState::Empty {
+                            moves.push(Move::new(index, index+3));
+                        }
+                    }
+                    if self.bc.tiles[index+4] == TileState::Empty {
+                        moves.push(Move::new(index, index+4));
+                    }
+                    if (index % 8) < 4 {
+                        if self.bc.tiles[index+5] == TileState::Empty {
+                            moves.push(Move::new(index, index+5));
+                        }
+                    }
+                    return moves;
+                }                        
+            }
+            TileState::RedMan => {
+                if index < 4 {
+                    return vec![];
+                }
+                if ((index % 8) == 3) || ((index % 8) == 4) {
+                    if self.bc.tiles[index-4] == TileState::Empty {
+                        return vec![Move::new(index, index-4)];
+                    }
+                    return vec![];
+                }
+                else {
+                    let mut moves = vec![];
+
+                    if (index % 8) > 3 {
+                        if self.bc.tiles[index-5] == TileState::Empty {
+                            moves.push(Move::new(index, index-5));
+                        }
+                    }
+                    if self.bc.tiles[index-4] == TileState::Empty {
+                        moves.push(Move::new(index, index-4));
+                    }
+                    if (index % 8) < 4 {
+                        if self.bc.tiles[index-3] == TileState::Empty {
+                            moves.push(Move::new(index, index-3));
+                        }
+                    }
+                    return moves;
+                }                        
+            }
+            _ => {
+                panic!("Board::get_possible_moves_for_piece: Invalid piece state!");
+            }
+        }
+    }
+
+    pub fn get_possible_jumps(&self, index: usize) -> Vec<Jump> {
         if index > 31 {
             panic!("Board::get_possible_jumps: Index out of bounds");
         }
-        return None
+        return vec![];
     }
 
 }
@@ -139,13 +223,13 @@ mod tests {
 
         // Test #1: default board
         for i in 0..8 {
-            assert_eq!(board.get_possible_moves(i), None);
+            assert_eq!(board.get_possible_moves(i), &[]);
         }
         for i in 12..20 {
-            assert_eq!(board.get_possible_moves(i), None);
+            assert_eq!(board.get_possible_moves(i), &[]);
         }
-        for i in 16..32 {
-            assert_eq!(board.get_possible_moves(i), None);
+        for i in 24..32 {
+            assert_eq!(board.get_possible_moves(i), &[]);
         }
         let test_cases = [
             (8, vec![12, 13]),
@@ -158,7 +242,7 @@ mod tests {
             (23, vec![18, 19]),
         ];        
         for &(start, ref expected_moves) in &test_cases {
-            let moves = board.get_possible_moves(start).expect("Expected Some, got None");
+            let moves = board.get_possible_moves(start);
             assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for position {}", start);
         
             for &to in expected_moves {
@@ -173,7 +257,7 @@ mod tests {
     }
     
     fn assert_moves(board: &Board, index: usize, expected_moves: &[(usize, usize)]) {
-        let moves = board.get_possible_moves(index).expect("Expected Some, got None");
+        let moves = board.get_possible_moves(index);
         assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for Black Man at index {}", index);
     
         for &(from, to) in expected_moves {
@@ -205,7 +289,7 @@ mod tests {
 
         let index = 3;
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
-        assert_moves(&board, index, &[(index, 4)]);
+        assert_moves(&board, index, &[(index, 7)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[7] = TileState::BlackMan;
@@ -264,7 +348,7 @@ mod tests {
 
         let index = 3;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 4)]);
+        assert_moves(&board, index, &[(index, 7)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[7] = TileState::BlackMan;

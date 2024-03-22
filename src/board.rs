@@ -169,7 +169,54 @@ impl Board {
         if index > 31 {
             panic!("Board::get_possible_jumps: Index out of bounds");
         }
-        return vec![];
+        match self.bc.tiles[index] {
+            TileState::BlackMan => {
+                if index >23 {
+                    return vec![];
+                }
+                let mut jumps = vec![];
+                if (index % 4) < 3 {
+                    if self.bc.tiles[index +9] == TileState::Empty {
+                        if (index %8) < 4 {
+                            if (self.bc.tiles[index+5] == TileState::RedMan) ||
+                                (self.bc.tiles[index+5] == TileState::RedKnight) {
+                                jumps.push(Jump::new(index, &vec![index+9]));
+                            }                            
+                        }
+                        else {
+                            if (self.bc.tiles[index+4] == TileState::RedMan) ||
+                                (self.bc.tiles[index+4] == TileState::RedKnight) {
+                                jumps.push(Jump::new(index, &vec![index+9]));
+                            }                            
+                        }
+                    }
+                }
+                if (index % 4) > 0 {
+                    if self.bc.tiles[index +7] == TileState::Empty {
+                        if (index %8) < 4 {
+                            if (self.bc.tiles[index+4] == TileState::RedMan) ||
+                                (self.bc.tiles[index+4] == TileState::RedKnight) {
+                                jumps.push(Jump::new(index, &vec![index+7]));
+                            }                            
+                        }
+                        else {
+                            if (self.bc.tiles[index+3] == TileState::RedMan) ||
+                                (self.bc.tiles[index+3] == TileState::RedKnight) {
+                                jumps.push(Jump::new(index, &vec![index+7]));
+                            }                            
+                        }
+                    }
+                }                
+
+                return jumps;
+            }
+            TileState::BlackKnight => {
+                return vec![];
+            }
+            _ => {
+                return vec![];
+            }
+        }
     }
 
 }

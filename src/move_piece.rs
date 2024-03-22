@@ -17,7 +17,10 @@ pub struct Jump {
 }
 
 impl Jump {
-    pub fn new(from: usize, to: Vec<usize>) -> Jump {
-        Jump { from, to }
+    pub fn new(from: usize, to: &Vec<usize>) -> Jump {
+        Jump { 
+            from, 
+            to: to.clone() 
+        }
     }
 }

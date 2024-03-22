@@ -11,6 +11,27 @@ pub trait Subject {
     fn notify_observers(&self);
 }
 
+
+impl Subject for Board {
+    fn register_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>) {
+        self.observers.push(bo);
+    }
+
+    fn remove_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>) {
+        let index = self.observers.iter().position(|o| Rc::ptr_eq(o, &bo));
+
+        if let Some(index) = index {
+            self.observers.remove(index);
+        }
+    }
+
+    fn notify_observers(&self) {
+        for observer in self.observers.iter() {
+            observer.borrow().update(&self.bc);
+        }
+    }
+}
+
 pub struct Board {
     observers: Vec<Rc<RefCell<dyn BoardObserver>>>,
     bc: BoardContent
@@ -154,27 +175,9 @@ impl Board {
 }
 
 
-impl Subject for Board {
-    fn register_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>) {
-        self.observers.push(bo);
-    }
-
-    fn remove_observer(&mut self, bo: Rc<RefCell<dyn BoardObserver>>) {
-        let index = self.observers.iter().position(|o| Rc::ptr_eq(o, &bo));
-
-        if let Some(index) = index {
-            self.observers.remove(index);
-        }
-    }
-
-    fn notify_observers(&self) {
-        for observer in self.observers.iter() {
-            observer.borrow().update(&self.bc);
-        }
-    }
-}
-
-
+////////////////////////////////////////////////////////////////////////////////
+/// Unit tests
+/// 
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -219,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_get_possible_moves() {
-        let mut board = Board::new();
+        let board = Board::new();
 
         // Test #1: default board
         for i in 0..8 {
@@ -258,7 +261,7 @@ mod tests {
     
     fn assert_moves(board: &Board, index: usize, expected_moves: &[(usize, usize)]) {
         let moves = board.get_possible_moves(index);
-        assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for Black Man at index {}", index);
+        assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for {:?} at index {}", board.bc.tiles[index], index);
     
         for &(from, to) in expected_moves {
             assert!(moves.contains(&Move::new(from, to)), "Move from {} to {} not found", from, to);
@@ -685,6 +688,26 @@ mod tests {
         assert_moves(&board, index, &[]);
 
     }
+
+    fn assert_jumpss(board: &Board, index: usize, expected_jumps: &[(usize, Vec<usize>)]) {
+        let jumps = board.get_possible_jumps(index);
+        assert_eq!(jumps.len(), expected_jumps.len(), "Mismatch in number of jumps for {:?} at index {}", board.bc.tiles[index], index);
+    
+        for (from, to) in expected_jumps {
+            assert!(jumps.contains(&Jump::new(*from, to)), "Move from {} to {:?} not found", from, to);
+        }
+    }
+
+    #[test]
+    fn test_get_possible_jumps_bm() {
+        let mut board = Board::new();
+
+        let index = 0;
+        setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
+        board.bc.tiles[5] = TileState::RedMan;
+        assert_jumpss(&board, index, &[(index, vec![9])]);
+    }
+     
 
     // more tests
 }

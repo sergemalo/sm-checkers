@@ -169,88 +169,129 @@ impl Board {
         if index > 31 {
             panic!("Board::get_possible_jumps: Index out of bounds");
         }
+        let mut tiles_to_check: Vec<TileState> = vec![TileState::RedMan, TileState::RedKnight];
         let mut jumps = vec![];
         match self.bc.tiles[index] {
             TileState::BlackMan => {
-                if index >23 {
-                    return vec![];
-                }
-                if (index % 4) < 3 {
-                    if self.bc.tiles[index +9] == TileState::Empty {
-                        if (index %8) < 4 {
-                            if (self.bc.tiles[index+5] == TileState::RedMan) ||
-                                (self.bc.tiles[index+5] == TileState::RedKnight) {
-                                jumps.push(Jump::new(index, &vec![index+9]));
-                            }                            
-                        }
-                        else {
-                            if (self.bc.tiles[index+4] == TileState::RedMan) ||
-                                (self.bc.tiles[index+4] == TileState::RedKnight) {
-                                jumps.push(Jump::new(index, &vec![index+9]));
-                            }                            
-                        }
-                    }
-                }
-                if (index % 4) > 0 {
-                    if self.bc.tiles[index +7] == TileState::Empty {
-                        if (index %8) < 4 {
-                            if (self.bc.tiles[index+4] == TileState::RedMan) ||
-                                (self.bc.tiles[index+4] == TileState::RedKnight) {
-                                jumps.push(Jump::new(index, &vec![index+7]));
-                            }                            
-                        }
-                        else {
-                            if (self.bc.tiles[index+3] == TileState::RedMan) ||
-                                (self.bc.tiles[index+3] == TileState::RedKnight) {
-                                jumps.push(Jump::new(index, &vec![index+7]));
-                            }                            
-                        }
-                    }
-                }
+                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
+            }
+            TileState::BlackKnight => {
+                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
             }
             TileState::RedMan => {
-                if index < 8 {
-                    return vec![];
-                }
-                if (index % 4) < 3 {
-                    if self.bc.tiles[index -7] == TileState::Empty {
-                        if (index %8) < 4 {
-                            if (self.bc.tiles[index-3] == TileState::BlackMan) ||
-                                (self.bc.tiles[index-3] == TileState::BlackKnight) {
-                                jumps.push(Jump::new(index, &vec![index -7]));
-                            }                            
-                        }
-                        else {
-                            if (self.bc.tiles[index-4] == TileState::BlackMan) ||
-                                (self.bc.tiles[index-4] == TileState::BlackKnight) {
-                                jumps.push(Jump::new(index, &vec![index -7]));
-                            }                            
-                        }
-                    }
-                }
-                if (index % 4) > 0 {
-                    if self.bc.tiles[index -9] == TileState::Empty {
-                        if (index %8) < 4 {
-                            if (self.bc.tiles[index-4] == TileState::BlackMan) ||
-                                (self.bc.tiles[index-4] == TileState::BlackKnight) {
-                                jumps.push(Jump::new(index, &vec![index -9]));
-                            }                            
-                        }
-                        else {
-                            if (self.bc.tiles[index-5] == TileState::BlackMan) ||
-                                (self.bc.tiles[index-5] == TileState::BlackKnight) {
-                                jumps.push(Jump::new(index, &vec![index -9]));
-                            }                            
-                        }
-                    }
-                }
-            }            
-            TileState::BlackKnight => {}
+                tiles_to_check[0] = TileState::BlackMan;
+                tiles_to_check[1] = TileState::BlackKnight;
+                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
+            }
+            TileState::RedKnight => {
+                tiles_to_check[0] = TileState::BlackMan;
+                tiles_to_check[1] = TileState::BlackKnight;
+                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
+                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
+            }
             _ => {}
         }
         return jumps;
         
     }
+
+    fn get_possible_jump_bl(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    {
+        if index > 23 {
+            return
+        }
+        if (index % 4) > 0 {
+            if self.bc.tiles[index +7] == TileState::Empty {
+                if (index %8) < 4 {
+                    if (self.bc.tiles[index+4] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index+4] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index+7]));
+                    }                            
+                }
+                else {
+                    if (self.bc.tiles[index+3] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index+3] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index+7]));
+                    }                            
+                }
+            }
+        }        
+    }
+
+    fn get_possible_jump_br(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    {
+        if index > 23 {
+            return
+        }
+        if (index % 4) < 3 {
+            if self.bc.tiles[index +9] == TileState::Empty {
+                if (index %8) < 4 {
+                    if (self.bc.tiles[index+5] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index+5] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index+9]));
+                    }                            
+                }
+                else {
+                    if (self.bc.tiles[index+4] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index+4] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index+9]));
+                    }                            
+                }
+            }
+        }        
+    }
+
+    fn get_possible_jump_tl(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    {
+        if index < 8 {
+            return;
+        }
+        if (index % 4) > 0 {
+            if self.bc.tiles[index -9] == TileState::Empty {
+                if (index %8) < 4 {
+                    if (self.bc.tiles[index-4] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index-4] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index -9]));
+                    }                            
+                }
+                else {
+                    if (self.bc.tiles[index-5] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index-5] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index -9]));
+                    }                            
+                }
+            }
+        }    }    
+
+    fn get_possible_jump_tr(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    {
+        if index < 8 {
+            return;
+        }
+        if (index % 4) < 3 {
+            if self.bc.tiles[index -7] == TileState::Empty {
+                if (index %8) < 4 {
+                    if (self.bc.tiles[index-3] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index-3] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index -7]));
+                    }                            
+                }
+                else {
+                    if (self.bc.tiles[index-4] == tiles_to_check[0]) ||
+                        (self.bc.tiles[index-4] == tiles_to_check[1]) {
+                        jumps.push(Jump::new(index, &vec![index -7]));
+                    }                            
+                }
+            }
+        } 
+    }       
 }
 
 
@@ -1018,11 +1059,11 @@ mod tests {
     }    
      
 
-    fn run_jump_knight_test(srcState: TileState) {
+    fn run_jump_knight_test(src_state: TileState) {
         let mut tile1 = TileState::BlackMan;
         let mut tile2 = TileState::RedMan;
         let mut tile3 = TileState::RedKnight;
-        if srcState == TileState::RedKnight {
+        if src_state == TileState::RedKnight {
             tile1 = TileState::RedMan;
             tile2 = TileState::BlackMan;
             tile3 = TileState::BlackKnight;
@@ -1030,69 +1071,69 @@ mod tests {
         let mut board = Board::new();
 
         let index = 0;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[5] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[5] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         assert_jumps(&board, index, &[(index, vec![9])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile3;
         assert_jumps(&board, index, &[(index, vec![9])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[9] = tile1;
         assert_jumps(&board, index, &[]);
 
 
         let index = 1;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[5] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[5] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         assert_jumps(&board, index, &[(index, vec![8])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile3;
         assert_jumps(&board, index, &[(index, vec![8])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[6] = tile3;
         assert_jumps(&board, index, &[(index, vec![8]), (index, vec![10])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[6] = tile3;
         board.bc.tiles[8] = tile1;
         assert_jumps(&board, index, &[(index, vec![10])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[6] = tile3;
         board.bc.tiles[10] = tile1;
         assert_jumps(&board, index, &[(index, vec![8])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[6] = tile3;
         board.bc.tiles[8] = tile1;
@@ -1101,77 +1142,77 @@ mod tests {
 
 
         let index = 4;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[8] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[8] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         assert_jumps(&board, index, &[(index, vec![13])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile3;
         assert_jumps(&board, index, &[(index, vec![13])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[0] = tile2;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[8] = tile2;
         assert_jumps(&board, index, &[(index, vec![13])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[0] = tile3;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[8] = tile3;
         assert_jumps(&board, index, &[(index, vec![13])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         board.bc.tiles[13] = tile1;
         assert_jumps(&board, index, &[]);        
 
 
         let index = 5;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[8] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[8] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         assert_jumps(&board, index, &[(index, vec![12])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile3;
         assert_jumps(&board, index, &[(index, vec![12])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         board.bc.tiles[9] = tile3;
         assert_jumps(&board, index, &[(index, vec![12]), (index, vec![14])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         board.bc.tiles[9] = tile3;
         board.bc.tiles[12] = tile1;
         assert_jumps(&board, index, &[(index, vec![14])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         board.bc.tiles[9] = tile3;
         board.bc.tiles[14] = tile1;
         assert_jumps(&board, index, &[(index, vec![12])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[8] = tile2;
         board.bc.tiles[9] = tile3;
         board.bc.tiles[12] = tile1;
@@ -1180,43 +1221,43 @@ mod tests {
 
 
         let index = 8;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[5] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[5] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         assert_jumps(&board, index, &[(index, vec![1])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile3;
         assert_jumps(&board, index, &[(index, vec![1])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[13] = tile3;
         assert_jumps(&board, index, &[(index, vec![1]), (index, vec![17])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[13] = tile3;
         board.bc.tiles[1] = tile1;
         assert_jumps(&board, index, &[(index, vec![17])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[13] = tile3;
         board.bc.tiles[17] = tile1;
         assert_jumps(&board, index, &[(index, vec![1])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[5] = tile2;
         board.bc.tiles[13] = tile3;
         board.bc.tiles[1] = tile1;
@@ -1224,63 +1265,63 @@ mod tests {
         assert_jumps(&board, index, &[]);
 
         let index = 25;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile1;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
-        board.bc.tiles[21] = srcState;
+        setup_board_with_one_piece(&mut board, index, src_state);
+        board.bc.tiles[21] = src_state;
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile2;
         assert_jumps(&board, index, &[(index, vec![16])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile3;
         assert_jumps(&board, index, &[(index, vec![16])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile2;
         board.bc.tiles[22] = tile3;
         assert_jumps(&board, index, &[(index, vec![16]), (index, vec![18])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile2;
         board.bc.tiles[22] = tile3;
         board.bc.tiles[16] = tile1;
         assert_jumps(&board, index, &[(index, vec![18])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile2;
         board.bc.tiles[22] = tile3;
         board.bc.tiles[18] = tile1;
         assert_jumps(&board, index, &[(index, vec![16])]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[21] = tile2;
         board.bc.tiles[22] = tile3;
         board.bc.tiles[16] = tile1;
-        board.bc.tiles[17] = tile1;
+        board.bc.tiles[18] = tile1;
         assert_jumps(&board, index, &[]);             
 
 
         let index = 25;
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         assert_jumps(&board, index, &[]);
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[29] = tile2;
         assert_jumps(&board, index, &[]);        
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[30] = tile3;
         assert_jumps(&board, index, &[]);        
 
-        setup_board_with_one_piece(&mut board, index, srcState);
+        setup_board_with_one_piece(&mut board, index, src_state);
         board.bc.tiles[29] = tile2;
         board.bc.tiles[30] = tile3;
         assert_jumps(&board, index, &[]);              
@@ -1288,12 +1329,8 @@ mod tests {
 
     #[test]
     fn test_get_possible_jumps_bk() {
-        let mut board = Board::new();
-
         run_jump_knight_test(TileState::BlackKnight);
         run_jump_knight_test(TileState::RedKnight);
-  
-
     }     
 
     // more tests

@@ -169,12 +169,12 @@ impl Board {
         if index > 31 {
             panic!("Board::get_possible_jumps: Index out of bounds");
         }
+        let mut jumps = vec![];
         match self.bc.tiles[index] {
             TileState::BlackMan => {
                 if index >23 {
                     return vec![];
                 }
-                let mut jumps = vec![];
                 if (index % 4) < 3 {
                     if self.bc.tiles[index +9] == TileState::Empty {
                         if (index %8) < 4 {
@@ -206,19 +206,51 @@ impl Board {
                             }                            
                         }
                     }
-                }                
-
-                return jumps;
+                }
             }
-            TileState::BlackKnight => {
-                return vec![];
-            }
-            _ => {
-                return vec![];
-            }
+            TileState::RedMan => {
+                if index < 8 {
+                    return vec![];
+                }
+                if (index % 4) < 3 {
+                    if self.bc.tiles[index -7] == TileState::Empty {
+                        if (index %8) < 4 {
+                            if (self.bc.tiles[index-3] == TileState::BlackMan) ||
+                                (self.bc.tiles[index-3] == TileState::BlackKnight) {
+                                jumps.push(Jump::new(index, &vec![index -7]));
+                            }                            
+                        }
+                        else {
+                            if (self.bc.tiles[index-4] == TileState::BlackMan) ||
+                                (self.bc.tiles[index-4] == TileState::BlackKnight) {
+                                jumps.push(Jump::new(index, &vec![index -7]));
+                            }                            
+                        }
+                    }
+                }
+                if (index % 4) > 0 {
+                    if self.bc.tiles[index -9] == TileState::Empty {
+                        if (index %8) < 4 {
+                            if (self.bc.tiles[index-4] == TileState::BlackMan) ||
+                                (self.bc.tiles[index-4] == TileState::BlackKnight) {
+                                jumps.push(Jump::new(index, &vec![index -9]));
+                            }                            
+                        }
+                        else {
+                            if (self.bc.tiles[index-5] == TileState::BlackMan) ||
+                                (self.bc.tiles[index-5] == TileState::BlackKnight) {
+                                jumps.push(Jump::new(index, &vec![index -9]));
+                            }                            
+                        }
+                    }
+                }
+            }            
+            TileState::BlackKnight => {}
+            _ => {}
         }
+        return jumps;
+        
     }
-
 }
 
 

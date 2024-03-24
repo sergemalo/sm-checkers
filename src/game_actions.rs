@@ -1,4 +1,4 @@
-use std::collections::LinkedList;
+use crate::player_trait::PlayerColor;
 
 pub enum ActionType {
     Quit,
@@ -24,7 +24,8 @@ impl ActionQuit {
 
 
 pub struct ActionMove {
-    pub list: LinkedList<u32>
+    pub player_color: PlayerColor,
+    pub tiles: Vec<usize>
 }
 
 impl GameAction for ActionMove {
@@ -34,9 +35,10 @@ impl GameAction for ActionMove {
 }
 
 impl ActionMove {
-    pub fn new() -> ActionMove {
+    pub fn new(player_color: PlayerColor, tiles: &Vec<usize>) -> ActionMove {
         ActionMove {
-            list: LinkedList::new()
+            player_color,
+            tiles: (*tiles).clone()
         }
     }
 }

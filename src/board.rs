@@ -2,6 +2,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::board_content::*;
 use crate::move_piece::*;
+use crate::player_trait::PlayerColor;
+use crate::game_actions::ActionMove;
 
 
 // Define the Subject trait
@@ -47,6 +49,33 @@ impl Board {
 
     pub fn doit(&self) {
         self.notify_observers();
+    }
+
+    pub fn move_piece(&mut self, action: &ActionMove) -> Result<(), String> {
+        // Verify if the action has enough tiles
+        if (*action).tiles.len() < 2 {
+            return Err("The action does not have at least two tiles (soruce and destination)".into());
+        }
+
+        // Verify if the source tile of the action is the right color
+        let src = (*action).tiles[0];
+        if action.player_color == PlayerColor::Black {
+            if (self.bc.tiles[src] != TileState::BlackMan) && (self.bc.tiles[src] != TileState::BlackKnight) {
+                return Err("Player is not moving a black piece.".into());
+            }
+        }
+        else {
+            if (self.bc.tiles[src] != TileState::RedMan) && (self.bc.tiles[src] != TileState::RedKnight) {
+                return Err("Player is not moving a red piece.".into());
+            }
+        }
+        return Ok(());
+        /*
+        // Transform User Action to either a Move or a Jump
+        let dst = (*action).tiles[1];
+        let jump = if (*action).tiles.len() > 2 { Some((*action).tiles[2]) } else { None };
+        let move_piece = MovePiece::new(src, dst, jump);
+        */
     }
 
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {

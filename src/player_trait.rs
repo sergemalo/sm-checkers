@@ -1,10 +1,15 @@
 use crate::game_actions::GameAction;
-use crate::board_content::PlayerColor;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PlayerColor {
+    Red,
+    Black
+}
 
 pub trait Player {
     fn get_name(&self) -> String;
     fn get_color(&self) -> PlayerColor;
-    
+
     // Returns a GameAction: 
     // The implementation of the play_turn should create a GameAction and move the ownership of the GameAction to the caller
     // In Rust, this is automatic when return a local variable

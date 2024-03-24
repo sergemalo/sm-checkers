@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -7,13 +8,12 @@ use crate::checkers_ui_text::CheckersUiText;
 use crate::board::Board;
 use crate::board::Subject;
 
-use crate::player_trait::Player;
+use crate::player_trait::*;
 use crate::player_human_console::PlayerHumanConsole;
 use crate::cyclic_iterator::CyclicIterator;
 
-//use crate::game_actions::*;
+use crate::game_actions::*;
 
-use crate::board_content::PlayerColor;
 
 mod board;
 mod checkers_ui;
@@ -57,19 +57,28 @@ fn main() {
             println!("{} has won!", (players_cyclic_iter.next()).unwrap().get_name());
             break;
         }
-        
-        println!("{}'s turn - You have the {:?} pieces", (*player).get_name(), (*player).get_color());
 
-        let ac = player.play_turn();
-        match ac.get_type() {
-            game_actions::ActionType::Move => {
-                //board.move_piece(ac.get_x(), ac.get_y());
-                board.doit();
+        let mut action_valid = false;
+        while !action_valid {
+            println!("{}'s turn - You have the {:?} pieces", (*player).get_name(), (*player).get_color());
+
+            let ac = player.play_turn();
+            if let Some(ac_move) = ac.as_ref().downcast_ref::<game_actions::Move>() {
+                match board.move_piece(ac_move) {
+                    Ok(_) => {
+                        action_valid = true;
+                    }
+                    Err(e) => {
+                        println!("Your move was invalid: {}", e);
+                    }
+                }
             }
-            game_actions::ActionType::Quit => {
+            else if let Some(ac_quit) = ac.downcast_ref::<game_actions::Quit>() {
+                action_valid = true;
                 println!("Bye!");
                 std::process::exit(0);
             }
+              
         }
     }
 

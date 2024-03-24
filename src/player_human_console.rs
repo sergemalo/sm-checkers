@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use crate::player_trait::Player;
+use crate::player_trait::*;
 use crate::board_content::*;
 use crate::game_actions::*;
 
@@ -41,7 +41,7 @@ impl Player for PlayerHumanConsole {
                 return Box::new(action);
             }
             _ => {
-                let action = ActionMove::new();
+                let action = ActionMove::new(self.color, &vec![]);
                 return Box::new(action);
             }
         }

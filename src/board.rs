@@ -52,6 +52,19 @@ impl Board {
     }
 
     pub fn move_piece(&mut self, action: &ActionMove) -> Result<(), String> {
+
+        self.is_move_valid(action)?;
+
+        return Ok(());
+        /*
+        // Transform User Action to either a Move or a Jump
+        let dst = (*action).tiles[1];
+        let jump = if (*action).tiles.len() > 2 { Some((*action).tiles[2]) } else { None };
+        let move_piece = MovePiece::new(src, dst, jump);
+        */
+    }
+
+    fn is_move_valid(&mut self, action: &ActionMove) -> Result<(), String> {
         // Verify if the action has enough tiles
         if (*action).tiles.len() < 2 {
             return Err("The action does not have at least two tiles (soruce and destination)".into());
@@ -69,14 +82,9 @@ impl Board {
                 return Err("Player is not moving a red piece.".into());
             }
         }
-        return Ok(());
-        /*
-        // Transform User Action to either a Move or a Jump
-        let dst = (*action).tiles[1];
-        let jump = if (*action).tiles.len() > 2 { Some((*action).tiles[2]) } else { None };
-        let move_piece = MovePiece::new(src, dst, jump);
-        */
+        Ok(())
     }
+
 
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
         let pieces = self.get_player_pieces_indexes(next_player_color);
@@ -330,6 +338,20 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_move_valid() {
+        let mut board = Board::new();
+
+        let action = ActionMove::new(PlayerColor::Black, &vec![]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![0]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![0, 1]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![8, 12]);
+        assert!(board.is_move_valid(&action).is_ok());
+    }
 
     #[test]
     fn test_is_game_over() {

@@ -67,13 +67,11 @@ impl Board {
     }
 
     fn is_move_valid(&mut self, action: &ActionMove) -> Result<Box<dyn Movement>, String> {
-        println!("is_move_valid");
         // Verify if the action has enough tiles
         if (*action).tiles.len() < 2 {
             return Err("The action does not have at least two tiles (soruce and destination)".into());
         }
 
-        println!("correct range");
         // Verify if tile indexes are in the correct range
         for t in &(*action).tiles {
             if *t > 31 {
@@ -81,7 +79,6 @@ impl Board {
             }
         }
 
-        println!("right color");
         // Verify if the source tile of the action is the right color
         let src = (*action).tiles[0];
         if action.player_color == PlayerColor::Black {
@@ -95,7 +92,6 @@ impl Board {
             }
         }
         
-        println!("destination tiles are empty");
         // Verify if all destination tiles are empty
         for (_index, &element) in (*action).tiles.iter().enumerate().skip(1) {
             if self.bc.tiles[element] != TileState::Empty {
@@ -103,7 +99,6 @@ impl Board {
             }
         }
 
-        println!("Shift?");
         // Verify if this is a shift, and if it is a valid shift
         let src = (*action).tiles[0];
         let dst = (*action).tiles[1];
@@ -111,9 +106,6 @@ impl Board {
         if ((*action).tiles.len() == 2) &&
             (((dst > src) && (dst - src) <5) ||
              ((dst < src) && (src - dst) < 6)) {
-
-                println!("Shift!");
-
             let cur_shift = Shift::new(src, dst);
             let possible_shifts = self.get_possible_shifts(src);
             if !possible_shifts.contains(&cur_shift) {
@@ -131,13 +123,10 @@ impl Board {
     }
 
     fn is_jump_valid(bc: &BoardContent, jump: &Jump) -> bool {
-        println!("Checking if jump is valid: {:?}", jump);
         let cur_jump = Jump::new((*jump).from(), &vec![(*jump).to[0]]);
         let possible_jumps = Board::get_possible_jumps(bc, (*jump).from());
-        println!("Possible jumps: {:?}", possible_jumps);
         if possible_jumps.contains(&cur_jump) {
             if (*jump).to.len() == 1 {
-                println!("Jump is valid");
                 return true
             }
             let next_jump = Jump::new((*jump).to[0], &(*jump).to[1..].to_vec());
@@ -159,16 +148,36 @@ impl Board {
         let delta = ( dst as i32 ) -  ( src as i32 );
         match delta {
             7 => {
-                return src + 4
+                if src % 8 < 4 {
+                    return dst - 3
+                }
+                else {
+                    return dst - 4
+                }
             }
             9 => {
-                return src + 5
+                if src % 8 < 4 {
+                    return dst - 4
+                }
+                else {
+                    return dst - 5
+                }
             }
             -7 => {
-                return src - 3
+                if src % 8 < 4 {
+                    return src - 3
+                }
+                else {
+                    return src - 4
+                }
             }
             -9 => {
-                return src - 5
+                if src % 8 < 4 {
+                    return src - 4
+                }
+                else {
+                    return src - 5
+                }
             }
             _ => {
                 panic!("Invalid jump");

@@ -67,11 +67,13 @@ impl Board {
     }
 
     fn is_move_valid(&mut self, action: &ActionMove) -> Result<Box<dyn Movement>, String> {
+        println!("is_move_valid");
         // Verify if the action has enough tiles
         if (*action).tiles.len() < 2 {
             return Err("The action does not have at least two tiles (soruce and destination)".into());
         }
 
+        println!("correct range");
         // Verify if tile indexes are in the correct range
         for t in &(*action).tiles {
             if *t > 31 {
@@ -79,6 +81,7 @@ impl Board {
             }
         }
 
+        println!("right color");
         // Verify if the source tile of the action is the right color
         let src = (*action).tiles[0];
         if action.player_color == PlayerColor::Black {
@@ -92,13 +95,15 @@ impl Board {
             }
         }
         
+        println!("destination tiles are empty");
         // Verify if all destination tiles are empty
         for (_index, &element) in (*action).tiles.iter().enumerate().skip(1) {
-            if (self.bc.tiles[element] != TileState::Empty) {
+            if self.bc.tiles[element] != TileState::Empty {
                 return Err("Destination tile is not empty.".into());
             }
         }
 
+        println!("Shift?");
         // Verify if this is a shift, and if it is a valid shift
         let src = (*action).tiles[0];
         let dst = (*action).tiles[1];
@@ -106,6 +111,8 @@ impl Board {
         if ((*action).tiles.len() == 2) &&
             (((dst > src) && (dst - src) <5) ||
              ((dst < src) && (src - dst) < 6)) {
+
+                println!("Shift!");
 
             let cur_shift = Shift::new(src, dst);
             let possible_shifts = self.get_possible_shifts(src);
@@ -116,8 +123,6 @@ impl Board {
         }
 
         // This is a jump. Verify if it is a valid jump
-        let mut is_valid = true;
-        //let to = vec!((*action).tiles[1..]);
         let the_jump = Jump::new(src, &((*action).tiles[1..]).to_vec());
         if Board::is_jump_valid(&self.bc, &the_jump) {
             return Ok(Box::new(the_jump));            
@@ -126,20 +131,49 @@ impl Board {
     }
 
     fn is_jump_valid(bc: &BoardContent, jump: &Jump) -> bool {
+        println!("Checking if jump is valid: {:?}", jump);
         let cur_jump = Jump::new((*jump).from(), &vec![(*jump).to[0]]);
         let possible_jumps = Board::get_possible_jumps(bc, (*jump).from());
+        println!("Possible jumps: {:?}", possible_jumps);
         if possible_jumps.contains(&cur_jump) {
             if (*jump).to.len() == 1 {
+                println!("Jump is valid");
                 return true
             }
-            let mut next_jump = (*jump).clone();
-            next_jump.to.remove(0);
+            let next_jump = Jump::new((*jump).to[0], &(*jump).to[1..].to_vec());
             let mut next_bc = (*bc).clone();
-            //next_bc.tiles[(*jump).to[0]] = TileState::Empty;
+            // Do the jump in the temp board
+            next_bc.tiles[next_jump.from()] = next_bc.tiles[(*jump).from()];
+            next_bc.tiles[(*jump).from()] = TileState::Empty;
+            next_bc.tiles[Board::get_eaten_tile_index((*jump).from(), (*jump).to[0])] = TileState::Empty;
             return Board::is_jump_valid(&next_bc, &next_jump)
         }
         else {
             return false
+        }
+    }
+
+    // This methos assumes that the jump is valid
+    // Otherwise it will panic
+    fn get_eaten_tile_index(src: usize, dst: usize) -> usize {
+        let delta = ( dst as i32 ) -  ( src as i32 );
+        match delta {
+            7 => {
+                return src + 4
+            }
+            9 => {
+                return src + 5
+            }
+            -7 => {
+                return src - 3
+            }
+            -9 => {
+                return src - 5
+            }
+            _ => {
+                panic!("Invalid jump");
+            }
+
         }
     }
 
@@ -540,9 +574,9 @@ mod tests {
         board.bc.tiles[5] = TileState::RedMan;
         board.bc.tiles[14] = TileState::RedKnight;
         board.bc.tiles[13] = TileState::RedKnight;
-        let action = ActionMove::new(PlayerColor::Red, &vec![0, 9, 18]);
+        let action = ActionMove::new(PlayerColor::Black, &vec![0, 9, 18]);
         assert!(board.is_move_valid(&action).is_ok());
-        let action = ActionMove::new(PlayerColor::Red, &vec![0, 9, 16]);
+        let action = ActionMove::new(PlayerColor::Black, &vec![0, 9, 16]);
         assert!(board.is_move_valid(&action).is_ok());
 
         board.bc.tiles.fill(TileState::Empty);

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::board_content::*;
-use crate::move_piece::*;
+use crate::movements::*;
 use crate::player_trait::PlayerColor;
 use crate::game_actions::ActionMove;
 
@@ -53,21 +53,30 @@ impl Board {
 
     pub fn move_piece(&mut self, action: &ActionMove) -> Result<(), String> {
 
-        self.is_move_valid(action)?;
+        let res = self.is_move_valid(action)?;
+        if matches!(&*res, Shift) {
+            println!("Received a Shift");
+        } else if matches!(&*res, Jump) {
+            println!("Received a Jump");
+        } else {
+            println!("Unknown movement type");
+        }
 
+        self.notify_observers();
         return Ok(());
-        /*
-        // Transform User Action to either a Move or a Jump
-        let dst = (*action).tiles[1];
-        let jump = if (*action).tiles.len() > 2 { Some((*action).tiles[2]) } else { None };
-        let move_piece = MovePiece::new(src, dst, jump);
-        */
     }
 
-    fn is_move_valid(&mut self, action: &ActionMove) -> Result<(), String> {
+    fn is_move_valid(&mut self, action: &ActionMove) -> Result<Box<dyn Movement>, String> {
         // Verify if the action has enough tiles
         if (*action).tiles.len() < 2 {
             return Err("The action does not have at least two tiles (soruce and destination)".into());
+        }
+
+        // Verify if tile indexes are in the correct range
+        for t in &(*action).tiles {
+            if *t > 31 {
+                return Err("Tile index is out of range.".into());
+            }
         }
 
         // Verify if the source tile of the action is the right color
@@ -82,19 +91,67 @@ impl Board {
                 return Err("Player is not moving a red piece.".into());
             }
         }
-        Ok(())
+        
+        // Verify if all destination tiles are empty
+        for (_index, &element) in (*action).tiles.iter().enumerate().skip(1) {
+            if (self.bc.tiles[element] != TileState::Empty) {
+                return Err("Destination tile is not empty.".into());
+            }
+        }
+
+        // Verify if this is a shift, and if it is a valid shift
+        let src = (*action).tiles[0];
+        let dst = (*action).tiles[1];
+        //let mut is_shift = false;
+        if ((*action).tiles.len() == 2) &&
+            (((dst > src) && (dst - src) <5) ||
+             ((dst < src) && (src - dst) < 6)) {
+
+            let cur_shift = Shift::new(src, dst);
+            let possible_shifts = self.get_possible_shifts(src);
+            if !possible_shifts.contains(&cur_shift) {
+                return Err("Invalid shift.".into());
+            }
+            return Ok(Box::new(cur_shift));
+        }
+
+        // This is a jump. Verify if it is a valid jump
+        let mut is_valid = true;
+        //let to = vec!((*action).tiles[1..]);
+        let the_jump = Jump::new(src, &((*action).tiles[1..]).to_vec());
+        if Board::is_jump_valid(&self.bc, &the_jump) {
+            return Ok(Box::new(the_jump));            
+        }
+        return Err("Invalid action.".into());
     }
 
+    fn is_jump_valid(bc: &BoardContent, jump: &Jump) -> bool {
+        let cur_jump = Jump::new((*jump).from(), &vec![(*jump).to[0]]);
+        let possible_jumps = Board::get_possible_jumps(bc, (*jump).from());
+        if possible_jumps.contains(&cur_jump) {
+            if (*jump).to.len() == 1 {
+                return true
+            }
+            let mut next_jump = (*jump).clone();
+            next_jump.to.remove(0);
+            let mut next_bc = (*bc).clone();
+            //next_bc.tiles[(*jump).to[0]] = TileState::Empty;
+            return Board::is_jump_valid(&next_bc, &next_jump)
+        }
+        else {
+            return false
+        }
+    }
 
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
         let pieces = self.get_player_pieces_indexes(next_player_color);
         for (i, _p) in pieces.iter().enumerate(){
-            if self.get_possible_moves(i).len() > 0 {
+            if self.get_possible_shifts(i).len() > 0 {
                 return false
             }
         }
         for (i, _p) in pieces.iter().enumerate(){
-            if self.get_possible_jumps(i).len() > 0 {
+            if Board::get_possible_jumps(&self.bc, i).len() > 0 {
                 return false
             }
         }
@@ -112,24 +169,24 @@ impl Board {
         return player_pieces_indexes
     }
 
-    pub fn get_possible_moves(&self, index: usize) -> Vec<Move> {
+    pub fn get_possible_shifts(&self, index: usize) -> Vec<Shift> {
         if index > 31 {
-            panic!("Board::get_possible_moves: Index out of bounds");
+            panic!("Board::get_possible_shifts: Index out of bounds");
         }
         match self.bc.tiles[index] {
             TileState::BlackMan => {
-                return self.get_possible_moves_for_piece(index, TileState::BlackMan);
+                return self.get_possible_shifts_for_piece(index, TileState::BlackMan);
             }
             TileState::BlackKnight | TileState::RedKnight => {
-                let mut moves: Vec<Move>  = vec![];
-                let mut moves2 = self.get_possible_moves_for_piece(index, TileState::BlackMan);
-                moves.append(&mut moves2);
-                let mut moves3 = self.get_possible_moves_for_piece(index, TileState::RedMan);
-                moves.append(&mut moves3);
-                return moves;
+                let mut shifts: Vec<Shift>  = vec![];
+                let mut shifts2 = self.get_possible_shifts_for_piece(index, TileState::BlackMan);
+                shifts.append(&mut shifts2);
+                let mut shifts3 = self.get_possible_shifts_for_piece(index, TileState::RedMan);
+                shifts.append(&mut shifts3);
+                return shifts;
             }
             TileState::RedMan => {
-                return self.get_possible_moves_for_piece(index, TileState::RedMan);
+                return self.get_possible_shifts_for_piece(index, TileState::RedMan);
             }
             _ => {
                 return vec![];
@@ -137,7 +194,7 @@ impl Board {
         }
     }
 
-    fn get_possible_moves_for_piece(&self, index: usize, state: TileState) -> Vec<Move> {
+    fn get_possible_shifts_for_piece(&self, index: usize, state: TileState) -> Vec<Shift> {
         match state {
             TileState::BlackMan => {
                 if index > 27 {
@@ -145,26 +202,26 @@ impl Board {
                 }
                 if ((index % 8) == 3) || ((index % 8) == 4) {
                     if self.bc.tiles[index+4] == TileState::Empty {
-                        return vec![Move::new(index, index+4)];
+                        return vec![Shift::new(index, index+4)];
                     }
                     return vec![];
                 }
                 else {
-                    let mut moves = vec![];
+                    let mut shifts = vec![];
                     if (index % 8) > 3 {
                         if self.bc.tiles[index+3] == TileState::Empty {
-                            moves.push(Move::new(index, index+3));
+                            shifts.push(Shift::new(index, index+3));
                         }
                     }
                     if self.bc.tiles[index+4] == TileState::Empty {
-                        moves.push(Move::new(index, index+4));
+                        shifts.push(Shift::new(index, index+4));
                     }
                     if (index % 8) < 4 {
                         if self.bc.tiles[index+5] == TileState::Empty {
-                            moves.push(Move::new(index, index+5));
+                            shifts.push(Shift::new(index, index+5));
                         }
                     }
-                    return moves;
+                    return shifts;
                 }                        
             }
             TileState::RedMan => {
@@ -173,65 +230,65 @@ impl Board {
                 }
                 if ((index % 8) == 3) || ((index % 8) == 4) {
                     if self.bc.tiles[index-4] == TileState::Empty {
-                        return vec![Move::new(index, index-4)];
+                        return vec![Shift::new(index, index-4)];
                     }
                     return vec![];
                 }
                 else {
-                    let mut moves = vec![];
+                    let mut shifts = vec![];
 
                     if (index % 8) > 3 {
                         if self.bc.tiles[index-5] == TileState::Empty {
-                            moves.push(Move::new(index, index-5));
+                            shifts.push(Shift::new(index, index-5));
                         }
                     }
                     if self.bc.tiles[index-4] == TileState::Empty {
-                        moves.push(Move::new(index, index-4));
+                        shifts.push(Shift::new(index, index-4));
                     }
                     if (index % 8) < 4 {
                         if self.bc.tiles[index-3] == TileState::Empty {
-                            moves.push(Move::new(index, index-3));
+                            shifts.push(Shift::new(index, index-3));
                         }
                     }
-                    return moves;
+                    return shifts;
                 }                        
             }
             _ => {
-                panic!("Board::get_possible_moves_for_piece: Invalid piece state!");
+                panic!("Board::get_possible_shifts_for_piece: Invalid piece state!");
             }
         }
     }
 
-    pub fn get_possible_jumps(&self, index: usize) -> Vec<Jump> {
+    pub fn get_possible_jumps(bc: &BoardContent, index: usize) -> Vec<Jump> {
         if index > 31 {
             panic!("Board::get_possible_jumps: Index out of bounds");
         }
         let mut tiles_to_check: Vec<TileState> = vec![TileState::RedMan, TileState::RedKnight];
         let mut jumps = vec![];
-        match self.bc.tiles[index] {
+        match bc.tiles[index] {
             TileState::BlackMan => {
-                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_bl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_br(bc, index, &tiles_to_check, &mut jumps);
             }
             TileState::BlackKnight => {
-                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_bl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_br(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tr(bc, index, &tiles_to_check, &mut jumps);
             }
             TileState::RedMan => {
                 tiles_to_check[0] = TileState::BlackMan;
                 tiles_to_check[1] = TileState::BlackKnight;
-                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tr(bc, index, &tiles_to_check, &mut jumps);
             }
             TileState::RedKnight => {
                 tiles_to_check[0] = TileState::BlackMan;
                 tiles_to_check[1] = TileState::BlackKnight;
-                self.get_possible_jump_bl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_br( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_tl( index, &tiles_to_check, &mut jumps);
-                self.get_possible_jump_tr( index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_bl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_br(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tl(bc, index, &tiles_to_check, &mut jumps);
+                Board::get_possible_jump_tr(bc, index, &tiles_to_check, &mut jumps);
             }
             _ => {}
         }
@@ -239,22 +296,22 @@ impl Board {
         
     }
 
-    fn get_possible_jump_bl(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    fn get_possible_jump_bl(bc: &BoardContent, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
     {
         if index > 23 {
             return
         }
         if (index % 4) > 0 {
-            if self.bc.tiles[index +7] == TileState::Empty {
+            if bc.tiles[index +7] == TileState::Empty {
                 if (index %8) < 4 {
-                    if (self.bc.tiles[index+4] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index+4] == tiles_to_check[1]) {
+                    if (bc.tiles[index+4] == tiles_to_check[0]) ||
+                        (bc.tiles[index+4] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index+7]));
                     }                            
                 }
                 else {
-                    if (self.bc.tiles[index+3] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index+3] == tiles_to_check[1]) {
+                    if (bc.tiles[index+3] == tiles_to_check[0]) ||
+                        (bc.tiles[index+3] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index+7]));
                     }                            
                 }
@@ -262,22 +319,22 @@ impl Board {
         }        
     }
 
-    fn get_possible_jump_br(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    fn get_possible_jump_br(bc: &BoardContent, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
     {
         if index > 23 {
             return
         }
         if (index % 4) < 3 {
-            if self.bc.tiles[index +9] == TileState::Empty {
+            if bc.tiles[index +9] == TileState::Empty {
                 if (index %8) < 4 {
-                    if (self.bc.tiles[index+5] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index+5] == tiles_to_check[1]) {
+                    if (bc.tiles[index+5] == tiles_to_check[0]) ||
+                        (bc.tiles[index+5] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index+9]));
                     }                            
                 }
                 else {
-                    if (self.bc.tiles[index+4] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index+4] == tiles_to_check[1]) {
+                    if (bc.tiles[index+4] == tiles_to_check[0]) ||
+                        (bc.tiles[index+4] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index+9]));
                     }                            
                 }
@@ -285,44 +342,44 @@ impl Board {
         }        
     }
 
-    fn get_possible_jump_tl(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    fn get_possible_jump_tl(bc: &BoardContent, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
     {
         if index < 8 {
             return;
         }
         if (index % 4) > 0 {
-            if self.bc.tiles[index -9] == TileState::Empty {
+            if bc.tiles[index -9] == TileState::Empty {
                 if (index %8) < 4 {
-                    if (self.bc.tiles[index-4] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index-4] == tiles_to_check[1]) {
+                    if (bc.tiles[index-4] == tiles_to_check[0]) ||
+                        (bc.tiles[index-4] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index -9]));
                     }                            
                 }
                 else {
-                    if (self.bc.tiles[index-5] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index-5] == tiles_to_check[1]) {
+                    if (bc.tiles[index-5] == tiles_to_check[0]) ||
+                        (bc.tiles[index-5] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index -9]));
                     }                            
                 }
             }
         }    }    
 
-    fn get_possible_jump_tr(&self, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
+    fn get_possible_jump_tr(bc: &BoardContent, index: usize, tiles_to_check: &Vec<TileState>, jumps: &mut Vec<Jump>)
     {
         if index < 8 {
             return;
         }
         if (index % 4) < 3 {
-            if self.bc.tiles[index -7] == TileState::Empty {
+            if bc.tiles[index -7] == TileState::Empty {
                 if (index %8) < 4 {
-                    if (self.bc.tiles[index-3] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index-3] == tiles_to_check[1]) {
+                    if (bc.tiles[index-3] == tiles_to_check[0]) ||
+                        (bc.tiles[index-3] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index -7]));
                     }                            
                 }
                 else {
-                    if (self.bc.tiles[index-4] == tiles_to_check[0]) ||
-                        (self.bc.tiles[index-4] == tiles_to_check[1]) {
+                    if (bc.tiles[index-4] == tiles_to_check[0]) ||
+                        (bc.tiles[index-4] == tiles_to_check[1]) {
                         jumps.push(Jump::new(index, &vec![index -7]));
                     }                            
                 }
@@ -538,35 +595,35 @@ mod tests {
     }
 
     #[test]
-    fn test_get_possible_moves() {
+    fn test_get_possible_shifts() {
         let board = Board::new();
 
         // Test #1: default board
         for i in 0..8 {
-            assert_eq!(board.get_possible_moves(i), &[]);
+            assert_eq!(board.get_possible_shifts(i), &[]);
         }
         for i in 12..20 {
-            assert_eq!(board.get_possible_moves(i), &[]);
+            assert_eq!(board.get_possible_shifts(i), &[]);
         }
         for i in 24..32 {
-            assert_eq!(board.get_possible_moves(i), &[]);
+            assert_eq!(board.get_possible_shifts(i), &[]);
         }
         let test_cases = [
             (8, vec![12, 13]),
             (9, vec![13, 14]),
             (10, vec![14, 15]),
-            (11, vec![15]), // Note that (11, vec![15]) has only one move.
-            (20, vec![16]), // Note that (20, vec![16]) has only one move.
+            (11, vec![15]), // Note that (11, vec![15]) has only one shift.
+            (20, vec![16]), // Note that (20, vec![16]) has only one shift.
             (21, vec![16, 17]),
             (22, vec![17, 18]),
             (23, vec![18, 19]),
         ];        
-        for &(start, ref expected_moves) in &test_cases {
-            let moves = board.get_possible_moves(start);
-            assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for position {}", start);
+        for &(start, ref expected_shifts) in &test_cases {
+            let shifts = board.get_possible_shifts(start);
+            assert_eq!(shifts.len(), expected_shifts.len(), "Mismatch in number of shifts for position {}", start);
         
-            for &to in expected_moves {
-                assert!(moves.contains(&Move::new(start, to)), "Move from {} to {} not found", start, to);
+            for &to in expected_shifts {
+                assert!(shifts.contains(&Shift::new(start, to)), "Shift from {} to {} not found", start, to);
             }
         }
     }
@@ -576,442 +633,442 @@ mod tests {
         board.bc.tiles[index] = state;
     }
     
-    fn assert_moves(board: &Board, index: usize, expected_moves: &[(usize, usize)]) {
-        let moves = board.get_possible_moves(index);
-        assert_eq!(moves.len(), expected_moves.len(), "Mismatch in number of moves for {:?} at index {}", board.bc.tiles[index], index);
+    fn assert_shifts(board: &Board, index: usize, expected_shifts: &[(usize, usize)]) {
+        let shifts = board.get_possible_shifts(index);
+        assert_eq!(shifts.len(), expected_shifts.len(), "Mismatch in number of shifts for {:?} at index {}", board.bc.tiles[index], index);
     
-        for &(from, to) in expected_moves {
-            assert!(moves.contains(&Move::new(from, to)), "Move from {} to {} not found", from, to);
+        for &(from, to) in expected_shifts {
+            assert!(shifts.contains(&Shift::new(from, to)), "Shift from {} to {} not found", from, to);
         }
     }
 
     #[test]
-    fn test_get_possible_moves_bm() {
+    fn test_get_possible_shifts_bm() {
         let mut board = Board::new();
  
         let index = 0;
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
-        assert_moves(&board, index, &[(index, 4), (index, 5)]);
+        assert_shifts(&board, index, &[(index, 4), (index, 5)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[4] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 5)]);
+        assert_shifts(&board, index, &[(index, 5)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 4)]);
+        assert_shifts(&board, index, &[(index, 4)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[4] = TileState::BlackMan;
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 3;
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
-        assert_moves(&board, index, &[(index, 7)]);
+        assert_shifts(&board, index, &[(index, 7)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[7] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 20;
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
-        assert_moves(&board, index, &[(index, 24)]);
+        assert_shifts(&board, index, &[(index, 24)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[24] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 23;
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
-        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        assert_shifts(&board, index, &[(index, 26), (index, 27)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[26] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 27)]);
+        assert_shifts(&board, index, &[(index, 27)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 26)]);
+        assert_shifts(&board, index, &[(index, 26)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackMan);
         board.bc.tiles[26] = TileState::BlackMan;
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
     }
 
     #[test]
-    fn test_get_possible_moves_bk() {
+    fn test_get_possible_shifts_bk() {
         let mut board = Board::new();
 
         let index = 0;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 4), (index, 5)]);
+        assert_shifts(&board, index, &[(index, 4), (index, 5)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[4] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 5)]);
+        assert_shifts(&board, index, &[(index, 5)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 4)]);
+        assert_shifts(&board, index, &[(index, 4)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[4] = TileState::BlackMan;
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 3;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 7)]);
+        assert_shifts(&board, index, &[(index, 7)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[7] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);        
+        assert_shifts(&board, index, &[]);        
 
 
         let index = 4;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 0), (index, 8)]);
+        assert_shifts(&board, index, &[(index, 0), (index, 8)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[0] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 8)]);
+        assert_shifts(&board, index, &[(index, 8)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[8] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 0)]);
+        assert_shifts(&board, index, &[(index, 0)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[0] = TileState::BlackMan;
         board.bc.tiles[8] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 7;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 2), (index, 3), (index, 10), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 2), (index, 3), (index, 10), (index, 11)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[2] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 3), (index, 10), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 3), (index, 10), (index, 11)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[3] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 2), (index, 10), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 2), (index, 10), (index, 11)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[2] = TileState::BlackMan;
         board.bc.tiles[3] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 10), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 10), (index, 11)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[2] = TileState::BlackMan;
         board.bc.tiles[10] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 3), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 3), (index, 11)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[2] = TileState::BlackMan;
         board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 3), (index, 10)]);
+        assert_shifts(&board, index, &[(index, 3), (index, 10)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[3] = TileState::BlackMan;
         board.bc.tiles[10] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 2), (index, 11)]);
+        assert_shifts(&board, index, &[(index, 2), (index, 11)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[3] = TileState::BlackMan;
         board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 2), (index, 10)]);
+        assert_shifts(&board, index, &[(index, 2), (index, 10)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[10] = TileState::BlackMan;
         board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 2), (index, 3)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        board.bc.tiles[2] = TileState::BlackMan;
-        board.bc.tiles[3] = TileState::BlackMan;
-        board.bc.tiles[10] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 11)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        board.bc.tiles[2] = TileState::BlackMan;
-        board.bc.tiles[3] = TileState::BlackMan;
-        board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 10)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        board.bc.tiles[2] = TileState::BlackMan;
-        board.bc.tiles[10] = TileState::BlackMan;
-        board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 3)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        board.bc.tiles[3] = TileState::BlackMan;
-        board.bc.tiles[10] = TileState::BlackMan;
-        board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 2)]);
+        assert_shifts(&board, index, &[(index, 2), (index, 3)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[2] = TileState::BlackMan;
         board.bc.tiles[3] = TileState::BlackMan;
         board.bc.tiles[10] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 11)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
         board.bc.tiles[11] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[(index, 10)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 3)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 2)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
+        board.bc.tiles[2] = TileState::BlackMan;
+        board.bc.tiles[3] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+        board.bc.tiles[11] = TileState::BlackMan;
+        assert_shifts(&board, index, &[]);
 
 
         let index = 28;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 24)]);
+        assert_shifts(&board, index, &[(index, 24)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[24] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 31;
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
-        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        assert_shifts(&board, index, &[(index, 26), (index, 27)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[26] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 27)]);
+        assert_shifts(&board, index, &[(index, 27)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 26)]);
+        assert_shifts(&board, index, &[(index, 26)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::BlackKnight);
         board.bc.tiles[26] = TileState::BlackMan;
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
     }
  
     #[test]
-    fn test_get_possible_moves_rm() {
+    fn test_get_possible_shifts_rm() {
         let mut board = Board::new();
  
         let index = 28;
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
-        assert_moves(&board, index, &[(index, 24)]);
+        assert_shifts(&board, index, &[(index, 24)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[24] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 31;
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
-        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        assert_shifts(&board, index, &[(index, 26), (index, 27)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[26] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 27)]);
+        assert_shifts(&board, index, &[(index, 27)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 26)]);
+        assert_shifts(&board, index, &[(index, 26)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[26] = TileState::BlackMan;
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 24;
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
-        assert_moves(&board, index, &[(index, 20), (index, 21)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 21)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[20] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 21)]);
+        assert_shifts(&board, index, &[(index, 21)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[21] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20)]);
+        assert_shifts(&board, index, &[(index, 20)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[20] = TileState::BlackMan;
         board.bc.tiles[21] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 27;
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
-        assert_moves(&board, index, &[(index, 23)]);
+        assert_shifts(&board, index, &[(index, 23)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         board.bc.tiles[23] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
         
     }
 
 
     #[test]
-    fn test_get_possible_moves_rk() {
+    fn test_get_possible_shifts_rk() {
         let mut board = Board::new();
 
         let index = 31;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 26), (index, 27)]);
+        assert_shifts(&board, index, &[(index, 26), (index, 27)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[26] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 27)]);
+        assert_shifts(&board, index, &[(index, 27)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 26)]);
+        assert_shifts(&board, index, &[(index, 26)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[26] = TileState::BlackMan;
         board.bc.tiles[27] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 28;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 24)]);
+        assert_shifts(&board, index, &[(index, 24)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[24] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 27;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 23), (index, 31)]);
+        assert_shifts(&board, index, &[(index, 23), (index, 31)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[23] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 31)]);
+        assert_shifts(&board, index, &[(index, 31)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[31] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 23)]);
+        assert_shifts(&board, index, &[(index, 23)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[23] = TileState::BlackMan;
         board.bc.tiles[31] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 24;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 20), (index, 21), (index, 28), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 21), (index, 28), (index, 29)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[20] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 21), (index, 28), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 21), (index, 28), (index, 29)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[21] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20), (index, 28), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 28), (index, 29)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[20] = TileState::BlackMan;
         board.bc.tiles[21] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 28), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 28), (index, 29)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[20] = TileState::BlackMan;
         board.bc.tiles[28] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 21), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 21), (index, 29)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[20] = TileState::BlackMan;
         board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 21), (index, 28)]);
+        assert_shifts(&board, index, &[(index, 21), (index, 28)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[21] = TileState::BlackMan;
         board.bc.tiles[28] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20), (index, 29)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 29)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[21] = TileState::BlackMan;
         board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20), (index, 28)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 28)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[28] = TileState::BlackMan;
         board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20), (index, 21)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        board.bc.tiles[20] = TileState::BlackMan;
-        board.bc.tiles[21] = TileState::BlackMan;
-        board.bc.tiles[28] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 29)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        board.bc.tiles[20] = TileState::BlackMan;
-        board.bc.tiles[21] = TileState::BlackMan;
-        board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 28)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        board.bc.tiles[20] = TileState::BlackMan;
-        board.bc.tiles[28] = TileState::BlackMan;
-        board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 21)]);
-
-        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        board.bc.tiles[21] = TileState::BlackMan;
-        board.bc.tiles[28] = TileState::BlackMan;
-        board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 20)]);
+        assert_shifts(&board, index, &[(index, 20), (index, 21)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[20] = TileState::BlackMan;
         board.bc.tiles[21] = TileState::BlackMan;
         board.bc.tiles[28] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 29)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
+        board.bc.tiles[20] = TileState::BlackMan;
+        board.bc.tiles[21] = TileState::BlackMan;
         board.bc.tiles[29] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[(index, 28)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
+        board.bc.tiles[20] = TileState::BlackMan;
+        board.bc.tiles[28] = TileState::BlackMan;
+        board.bc.tiles[29] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 21)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
+        board.bc.tiles[21] = TileState::BlackMan;
+        board.bc.tiles[28] = TileState::BlackMan;
+        board.bc.tiles[29] = TileState::BlackMan;
+        assert_shifts(&board, index, &[(index, 20)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
+        board.bc.tiles[20] = TileState::BlackMan;
+        board.bc.tiles[21] = TileState::BlackMan;
+        board.bc.tiles[28] = TileState::BlackMan;
+        board.bc.tiles[29] = TileState::BlackMan;
+        assert_shifts(&board, index, &[]);
 
 
         let index = 3;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 7)]);
+        assert_shifts(&board, index, &[(index, 7)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[7] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
 
         let index = 0;
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
-        assert_moves(&board, index, &[(index, 4), (index, 5)]);
+        assert_shifts(&board, index, &[(index, 4), (index, 5)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[4] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 5)]);
+        assert_shifts(&board, index, &[(index, 5)]);
 
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[(index, 4)]);
+        assert_shifts(&board, index, &[(index, 4)]);
         
         setup_board_with_one_piece(&mut board, index, TileState::RedKnight);
         board.bc.tiles[4] = TileState::BlackMan;
         board.bc.tiles[5] = TileState::BlackMan;
-        assert_moves(&board, index, &[]);
+        assert_shifts(&board, index, &[]);
 
     }
 
     fn assert_jumps(board: &Board, index: usize, expected_jumps: &[(usize, Vec<usize>)]) {
-        let jumps = board.get_possible_jumps(index);
+        let jumps = Board::get_possible_jumps(&board.bc, index);
         assert_eq!(jumps.len(), expected_jumps.len(), "Mismatch in number of jumps for {:?} at index {}", board.bc.tiles[index], index);
     
         for (from, to) in expected_jumps {
-            assert!(jumps.contains(&Jump::new(*from, to)), "Move from {} to {:?} not found", from, to);
+            assert!(jumps.contains(&Jump::new(*from, to)), "Jump from {} to {:?} not found", from, to);
         }
     }
 

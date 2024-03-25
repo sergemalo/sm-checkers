@@ -7,7 +7,7 @@ pub enum TileState {
     BlackKnight
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoardContent {
     pub tiles: [TileState; 32]
 }

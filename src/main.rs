@@ -22,7 +22,7 @@ mod player_trait;
 mod board_content;
 mod game_actions;
 mod cyclic_iterator;
-mod move_piece;
+mod movements;
 
 
 

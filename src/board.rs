@@ -340,18 +340,164 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_move_valid() {
+    fn test_is_move_invalid() {
         let mut board = Board::new();
 
+        // Invalid array
         let action = ActionMove::new(PlayerColor::Black, &vec![]);
         assert!(board.is_move_valid(&action).is_err());
         let action = ActionMove::new(PlayerColor::Black, &vec![0]);
         assert!(board.is_move_valid(&action).is_err());
-        let action = ActionMove::new(PlayerColor::Black, &vec![0, 1]);
+        let action = ActionMove::new(PlayerColor::Black, &vec![28, 32]);
         assert!(board.is_move_valid(&action).is_err());
+
+        // Invalid piece type for player
+        let action = ActionMove::new(PlayerColor::Black, &vec![12, 16]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![20, 16]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Red, &vec![8, 12]);
+        assert!(board.is_move_valid(&action).is_err());
+
+        // Invalid move
+        board.bc.tiles[5] = TileState::Empty;
+        board.bc.tiles[6] = TileState::Empty;
+        board.bc.tiles[8] = TileState::Empty;
+        board.bc.tiles[10] = TileState::Empty;
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 5]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 6]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 8]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 10]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles[5] = TileState::BlackMan;
+        board.bc.tiles[6] = TileState::BlackMan;
+        board.bc.tiles[8] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackMan;
+
+        // Blocked move
+        let action = ActionMove::new(PlayerColor::Black, &vec![5, 8]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![5, 9]);
+        assert!(board.is_move_valid(&action).is_err());
+
+        // Invalid jump
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[9] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::RedMan;
+        board.bc.tiles[6] = TileState::RedMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 0]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Black, &vec![9, 2]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[9] = TileState::RedMan;
+        board.bc.tiles[13] = TileState::RedMan;
+        board.bc.tiles[14] = TileState::BlackKnight;
+        let action = ActionMove::new(PlayerColor::Red, &vec![9, 16]);
+        assert!(board.is_move_valid(&action).is_err());
+        let action = ActionMove::new(PlayerColor::Red, &vec![9, 18]);
+        assert!(board.is_move_valid(&action).is_err());
+
+
+        // Blocked jump
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[1] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::RedMan;
+        board.bc.tiles[6] = TileState::RedMan;
+        board.bc.tiles[8] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![1, 8]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles[8] = TileState::Empty;
+        board.bc.tiles[10] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![1, 10]);
+        assert!(board.is_move_valid(&action).is_err());
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[17] = TileState::RedKnight;
+        board.bc.tiles[13] = TileState::BlackKnight;
+        board.bc.tiles[14] = TileState::BlackKnight;
+        board.bc.tiles[21] = TileState::BlackKnight;
+        board.bc.tiles[22] = TileState::BlackKnight;
+        board.bc.tiles[8] = TileState::RedMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![17, 8]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles[8] = TileState::Empty;
+        board.bc.tiles[10] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![17, 10]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles[10] = TileState::Empty;
+        board.bc.tiles[24] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![17, 24]);
+        assert!(board.is_move_valid(&action).is_err());
+        board.bc.tiles[24] = TileState::Empty;
+        board.bc.tiles[26] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![17, 26]);
+        assert!(board.is_move_valid(&action).is_err());
+
+    }
+
+    #[test]
+    fn test_is_move_valid() {
+        let mut board = Board::new();
+
         let action = ActionMove::new(PlayerColor::Black, &vec![8, 12]);
         assert!(board.is_move_valid(&action).is_ok());
+        let action = ActionMove::new(PlayerColor::Red, &vec![21, 17]);
+        assert!(board.is_move_valid(&action).is_ok());
+
+        board.bc.tiles[13] = TileState::RedMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![8, 17]);
+        assert!(board.is_move_valid(&action).is_ok());
+        board.bc.tiles[13] = TileState::Empty;
+
+        board.bc.tiles[16] = TileState::BlackKnight;
+        let action = ActionMove::new(PlayerColor::Red, &vec![20, 13]);
+        assert!(board.is_move_valid(&action).is_ok());
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[22] = TileState::RedKnight;
+        board.bc.tiles[17] = TileState::BlackMan;
+        board.bc.tiles[18] = TileState::BlackMan;
+        board.bc.tiles[25] = TileState::BlackMan;
+        board.bc.tiles[26] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![22, 13]);
+        assert!(board.is_move_valid(&action).is_ok());
+        let action = ActionMove::new(PlayerColor::Red, &vec![22, 15]);
+        assert!(board.is_move_valid(&action).is_ok());
+        let action = ActionMove::new(PlayerColor::Red, &vec![22, 29]);
+        assert!(board.is_move_valid(&action).is_ok());
+        let action = ActionMove::new(PlayerColor::Red, &vec![22, 31]);
+        assert!(board.is_move_valid(&action).is_ok());
+
     }
+
+    #[test]
+    fn test_is_multi_jump_valid() {
+        let mut board = Board::new();
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[0] = TileState::BlackMan;
+        board.bc.tiles[5] = TileState::RedMan;
+        board.bc.tiles[14] = TileState::RedKnight;
+        board.bc.tiles[13] = TileState::RedKnight;
+        let action = ActionMove::new(PlayerColor::Red, &vec![0, 9, 18]);
+        assert!(board.is_move_valid(&action).is_ok());
+        let action = ActionMove::new(PlayerColor::Red, &vec![0, 9, 16]);
+        assert!(board.is_move_valid(&action).is_ok());
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[20] = TileState::RedKnight;
+        board.bc.tiles[16] = TileState::BlackMan;
+        board.bc.tiles[17] = TileState::BlackKnight;
+        board.bc.tiles[18] = TileState::BlackMan;
+        board.bc.tiles[10] = TileState::BlackKnight;
+        let action = ActionMove::new(PlayerColor::Red, &vec![20, 13, 22, 15, 6]);
+        assert!(board.is_move_valid(&action).is_ok());
+    }
+
 
     #[test]
     fn test_is_game_over() {

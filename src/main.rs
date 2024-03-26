@@ -58,34 +58,32 @@ fn main() {
             break;
         }
 
-        /*
         let mut action_valid = false;
         while !action_valid {
             println!("{}'s turn - You have the {:?} pieces", (*player).get_name(), (*player).get_color());
 
             let ac = player.play_turn();
-            if let Some(ac_move) = ac.downcast_ref::<game_actions::ActionMove>() {
-                match board.move_piece(ac_move) {
-                    Ok(_) => {
-                        action_valid = true;
-                    }
-                    Err(e) => {
-                        println!("Your move was invalid: {}", e);
+            if ac.as_any().downcast_ref::<game_actions::ActionMove>().is_some() {
+                if let Some(ac_move) = ac.as_any().downcast_ref::<game_actions::ActionMove>() {
+                    match board.move_piece(ac_move) {
+                        Ok(_) => {
+                            action_valid = true;
+                        }
+                        Err(e) => {
+                            println!("Your move was invalid: {}", e);
+                        }
                     }
                 }
-            }
-            else if let Some(ac_quit) = (&*ac).downcast_ref::<game_actions::ActionQuit>() {
-                action_valid = true;
-                println!("Bye!");
-                std::process::exit(0);
-            }
-              
+                else if let Some(ac_quit) = ac.as_any().downcast_ref::<game_actions::ActionQuit>() {
+                    action_valid = true;
+                    println!("Bye!");
+                    std::process::exit(0);
+                }
+            }              
         }
-        */
         println!("Bye!");
         std::process::exit(0);
-}
-
+    }
     println!("GAME OVER");
 }
 

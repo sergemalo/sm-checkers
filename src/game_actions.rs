@@ -1,3 +1,4 @@
+use std::any::Any;
 use crate::player_trait::PlayerColor;
 
 
@@ -7,6 +8,7 @@ pub enum ActionType {
 }
 pub trait GameAction {
     fn get_type(&self) -> ActionType;
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub struct ActionQuit {}
@@ -14,6 +16,9 @@ pub struct ActionQuit {}
 impl GameAction for ActionQuit {
     fn get_type(&self) -> ActionType {
         ActionType::Quit
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -32,6 +37,9 @@ pub struct ActionMove {
 impl GameAction for ActionMove {
     fn get_type(&self) -> ActionType {
         ActionType::Move
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

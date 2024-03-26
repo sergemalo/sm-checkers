@@ -1,5 +1,8 @@
+use std::any::Any;
+
 pub trait Movement {
     fn from(&self) -> usize;
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(Debug,PartialEq)]
@@ -18,6 +21,10 @@ impl Movement for Shift {
     fn from(&self) -> usize {
         return self.from;
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -39,4 +46,8 @@ impl Movement for Jump {
     fn from(&self) -> usize {
         self.from
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }

@@ -54,12 +54,20 @@ impl Board {
     pub fn move_piece(&mut self, action: &ActionMove) -> Result<(), String> {
 
         let res = self.is_move_valid(action)?;
-        if matches!(&*res, Shift) {
-            println!("Received a Shift");
-        } else if matches!(&*res, Jump) {
-            println!("Received a Jump");
-        } else {
-            println!("Unknown movement type");
+        if res.as_any().downcast_ref::<Shift>().is_some() {
+            if let Some(shift) = res.as_any().downcast_ref::<Shift>() {
+                self.bc.tiles[shift.to] = self.bc.tiles[shift.from()];
+                self.bc.tiles[shift.from()] = TileState::Empty;
+            }
+        }
+        if res.as_any().downcast_ref::<Jump>().is_some() {
+            if let Some(jump) = res.as_any().downcast_ref::<Jump>() {
+                let tile_eaten = Board::get_eaten_tile_index(jump.from(), jump.to[0]);
+                self.bc.tiles[tile_eaten] = TileState::Empty;
+                self.bc.tiles[*jump.to.last().unwrap()] = self.bc.tiles[jump.from()];
+                self.bc.tiles[jump.from()] = TileState::Empty;
+                // TODO: For loop
+            }
         }
 
         self.notify_observers();

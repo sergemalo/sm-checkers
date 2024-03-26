@@ -11,6 +11,7 @@ pub trait GameAction {
     fn as_any(&self) -> &dyn Any;
 }
 
+#[derive(Debug)]
 pub struct ActionQuit {}
 
 impl GameAction for ActionQuit {
@@ -29,6 +30,7 @@ impl ActionQuit {
 }
 
 
+#[derive(Debug)]
 pub struct ActionMove {
     pub player_color: PlayerColor,
     pub tiles: Vec<usize>

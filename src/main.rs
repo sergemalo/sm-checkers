@@ -65,6 +65,7 @@ fn main() {
             let ac = player.play_turn();
             if ac.as_any().downcast_ref::<game_actions::ActionMove>().is_some() {
                 if let Some(ac_move) = ac.as_any().downcast_ref::<game_actions::ActionMove>() {
+                    println!("Move: {:?}", ac_move);
                     match board.move_piece(ac_move) {
                         Ok(_) => {
                             action_valid = true;
@@ -74,15 +75,16 @@ fn main() {
                         }
                     }
                 }
-                else if let Some(ac_quit) = ac.as_any().downcast_ref::<game_actions::ActionQuit>() {
+            }
+            else if ac.as_any().downcast_ref::<game_actions::ActionQuit>().is_some() {
+                if let Some(ac_quit) = ac.as_any().downcast_ref::<game_actions::ActionQuit>() {
+                    println!("Quit: {:?}", ac_quit);
                     action_valid = true;
                     println!("Bye!");
                     std::process::exit(0);
                 }
             }              
         }
-        println!("Bye!");
-        std::process::exit(0);
     }
     println!("GAME OVER");
 }

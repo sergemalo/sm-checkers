@@ -37,11 +37,13 @@ impl Player for PlayerHumanConsole {
         
         match input.trim().to_lowercase().as_str() {
             "q" => {
+                println!("{} - Received quit", self.name);
                 let action = ActionQuit::new();
                 return Box::new(action);
             }
             _ => {
-                let action = ActionMove::new(self.color, &vec![]);
+                println!("{} - Received move: {}", self.name, input.trim());
+                let action = ActionMove::new(self.color, &vec![8, 12]);
                 return Box::new(action);
             }
         }

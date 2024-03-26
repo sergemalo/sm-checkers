@@ -66,7 +66,11 @@ impl Board {
                 self.bc.tiles[tile_eaten] = TileState::Empty;
                 self.bc.tiles[*jump.to.last().unwrap()] = self.bc.tiles[jump.from()];
                 self.bc.tiles[jump.from()] = TileState::Empty;
-                // TODO: For loop
+                for i in 0..jump.to.len() - 1 {
+                    let tile_eaten = Board::get_eaten_tile_index(jump.to[i], jump.to[i+1]);
+                    self.bc.tiles[tile_eaten] = TileState::Empty;
+                    self.bc.tiles[jump.to[i]] = TileState::Empty;
+                }
             }
         }
 

@@ -56,16 +56,14 @@ impl Board {
         let res = self.is_move_valid(action)?;
         if res.as_any().downcast_ref::<Shift>().is_some() {
             if let Some(shift) = res.as_any().downcast_ref::<Shift>() {
-                self.bc.tiles[shift.to] = self.bc.tiles[shift.from()];
-                self.bc.tiles[shift.from()] = TileState::Empty;
+                self.move_src_to_dst(shift.from(), shift.to);
             }
         }
         if res.as_any().downcast_ref::<Jump>().is_some() {
             if let Some(jump) = res.as_any().downcast_ref::<Jump>() {
                 let tile_eaten = Board::get_eaten_tile_index(jump.from(), jump.to[0]);
                 self.bc.tiles[tile_eaten] = TileState::Empty;
-                self.bc.tiles[*jump.to.last().unwrap()] = self.bc.tiles[jump.from()];
-                self.bc.tiles[jump.from()] = TileState::Empty;
+                self.move_src_to_dst(jump.from(), *jump.to.last().unwrap());
                 for i in 0..jump.to.len() - 1 {
                     let tile_eaten = Board::get_eaten_tile_index(jump.to[i], jump.to[i+1]);
                     self.bc.tiles[tile_eaten] = TileState::Empty;
@@ -78,6 +76,16 @@ impl Board {
         return Ok(());
     }
 
+    fn move_src_to_dst(&mut self, src: usize, dst: usize) {
+        self.bc.tiles[dst] = self.bc.tiles[src];
+        if dst > 27 && self.bc.tiles[dst] == TileState::BlackMan {
+            self.bc.tiles[dst] = TileState::BlackKnight;
+        }
+        if dst < 4 && self.bc.tiles[dst] == TileState::RedMan {
+            self.bc.tiles[dst] = TileState::RedKnight;
+        }
+        self.bc.tiles[src] = TileState::Empty;
+    }
     fn is_move_valid(&mut self, action: &ActionMove) -> Result<Box<dyn Movement>, String> {
         // Verify if the action has enough tiles
         if (*action).tiles.len() < 2 {
@@ -590,6 +598,24 @@ mod tests {
 
 
     }
+
+    #[test]
+    fn test_move_action() {
+        let mut board = Board::new();
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[24] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![24, 28]);
+        assert!(board.move_piece(&action).is_ok());
+        assert!(board.bc.tiles[28] == TileState::BlackKnight);
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[5] = TileState::RedMan;
+        let action = ActionMove::new(PlayerColor::Red, &vec![5, 1]);
+        assert!(board.move_piece(&action).is_ok());
+        assert!(board.bc.tiles[1] == TileState::RedKnight);
+}
+
 
     #[test]
     fn test_is_multi_jump_valid() {
@@ -1645,7 +1671,8 @@ mod tests {
     fn test_get_possible_jumps_bk() {
         run_jump_knight_test(TileState::BlackKnight);
         run_jump_knight_test(TileState::RedKnight);
-    }     
+    }
+
 
     // more tests
 }

@@ -114,9 +114,8 @@ impl Board {
         // Verify if this is a shift, and if it is a valid shift
         let src = (*action).tiles[0];
         let dst = (*action).tiles[1];
-        //let mut is_shift = false;
         if ((*action).tiles.len() == 2) &&
-            (((dst > src) && (dst - src) <5) ||
+            (((dst > src) && (dst - src) < 6) ||
              ((dst < src) && (src - dst) < 6)) {
             let cur_shift = Shift::new(src, dst);
             let possible_shifts = self.get_possible_shifts(src);
@@ -583,6 +582,12 @@ mod tests {
         assert!(board.is_move_valid(&action).is_ok());
         let action = ActionMove::new(PlayerColor::Red, &vec![22, 31]);
         assert!(board.is_move_valid(&action).is_ok());
+
+        board.bc.tiles.fill(TileState::Empty);
+        board.bc.tiles[8] = TileState::BlackMan;
+        let action = ActionMove::new(PlayerColor::Black, &vec![8, 13]);
+        assert!(board.is_move_valid(&action).is_ok());
+
 
     }
 

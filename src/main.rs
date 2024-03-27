@@ -11,8 +11,6 @@ use crate::player_trait::*;
 use crate::player_human_console::PlayerHumanConsole;
 use crate::cyclic_iterator::CyclicIterator;
 
-use crate::game_actions::*;
-
 
 mod board;
 mod checkers_ui;
@@ -79,7 +77,6 @@ fn main() {
             else if ac.as_any().downcast_ref::<game_actions::ActionQuit>().is_some() {
                 if let Some(ac_quit) = ac.as_any().downcast_ref::<game_actions::ActionQuit>() {
                     println!("Quit: {:?}", ac_quit);
-                    action_valid = true;
                     println!("Bye!");
                     std::process::exit(0);
                 }

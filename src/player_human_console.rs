@@ -28,23 +28,51 @@ impl Player for PlayerHumanConsole {
         self.name.clone()
     }
     fn play_turn(&self) -> Box<dyn GameAction> {
-        println!("{} - Please write move or quit with letter (q):", self.name);
+        println!("{} - Please write move (ex: \"m 1, 2\") or quit with letter \"q\":", self.name);
 
         let mut input = String::new();
         io::stdout().flush().unwrap();
         input.clear();
         io::stdin().read_line(&mut input).expect("Failed to read Action from Player");
         
-        match input.trim().to_lowercase().as_str() {
-            "q" => {
-                println!("{} - Received quit", self.name);
-                let action = ActionQuit::new();
-                return Box::new(action);
-            }
-            _ => {
-                println!("{} - Received move: {}", self.name, input.trim());
-                let action = ActionMove::new(self.color, &vec![8, 12]);
-                return Box::new(action);
+        loop {
+            match input.to_lowercase().chars().next() {
+                Some('q') => {
+                    println!("{} - Received quit", self.name);
+                    let action = ActionQuit::new();
+                    return Box::new(action);
+                }
+                // Matching:
+                // m 1, 2
+                // m 8, 12
+                // m 28, 32
+                // m 1, 10, 19, 26
+                // Convert to move(1, vec[2])...
+                Some('m') => {
+                    while input.chars().next().unwrap().is_digit(10) == false {
+                       input.remove(0) ;
+                    }
+                    println!("{} - Received move: {:?}", self.name, input);
+                    let tiles_str: Vec<&str> = input.split(',').collect();
+                    let mut tiles_idx: Vec<usize> = Vec::new();
+                    for s in tiles_str {
+                        if s.trim().is_empty() {
+                            continue;
+                        }
+                        let val = s.trim().parse::<usize>().unwrap();
+                        if (val == 0) || (val > 32) {
+                            println!("Invalid command: {}", input.trim());
+                        }
+                        tiles_idx.push(val-1);
+                    }
+    
+                    println!(" --> Received move: {:?}", tiles_idx);
+                    let action = ActionMove::new(self.color, &tiles_idx);
+                    return Box::new(action);
+                }
+                _ => {
+                    println!("Invalid command: {}", input.trim());
+               }            
             }
         }
     }
@@ -52,7 +80,7 @@ impl Player for PlayerHumanConsole {
 
 impl BoardObserver for PlayerHumanConsole {
     fn update(&self, _bc: &BoardContent) {
-        println!("{} - Received new board", self.name);
+        //println!("{} - Received new board", self.name);
     }
 
 }

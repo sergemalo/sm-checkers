@@ -4,22 +4,28 @@ use std::cell::RefCell;
 use crate::checkers_ui::CheckersUi;
 use crate::checkers_ui_text::CheckersUiText;
 
-use crate::board::Board;
-use crate::board::Subject;
+use crate::checkers_game::CheckersGame;
+use crate::checkers_game::Subject;
 
 use crate::player_trait::*;
 use crate::player_human_console::PlayerHumanConsole;
+use crate::player_bot_random::PlayerBotRandom;
 use crate::cyclic_iterator::CyclicIterator;
 
 
-mod board;
+mod checkers_rules;
+mod checkers_game;
+mod checkers_board;
+
 mod checkers_ui;
 mod checkers_ui_text;
-mod player_human_console;
-mod player_trait;
-mod board_content;
-mod game_actions;
+
 mod cyclic_iterator;
+mod player_trait;
+mod player_human_console;
+mod player_bot_random;
+
+mod game_actions;
 mod movements;
 
 
@@ -32,25 +38,24 @@ fn main() {
     gui.borrow_mut().splash_screen();
 
     // Create game
-    // Create Board
-    let mut board = Board::new();
+    let mut game = CheckersGame::new();
 
     // Create Players
     let mut players = vec![];
     players.push(PlayerHumanConsole::new("Player 1", PlayerColor::Black));
     players.push(PlayerHumanConsole::new("Player 2", PlayerColor::Red));
+    //players.push(PlayerBotRandom::new("ZE BOT", PlayerColor::Red));
 
 
     // Add UI and Players to the Board's Observers
     // TODO: NOT SURE ABOUT THIS - CLONE ?
-    board.register_observer(gui.clone());
-    board.register_observer(Rc::new(RefCell::new(players[0].clone()))); 
-    board.register_observer(Rc::new(RefCell::new(players[1].clone())));
-    board.doit();
+    game.register_observer(gui.clone());
+    game.register_observer(Rc::new(RefCell::new(players[0].clone()))); 
+    game.register_observer(Rc::new(RefCell::new(players[1].clone())));
 
     let mut players_cyclic_iter = CyclicIterator::new(&players);
     for player in players_cyclic_iter.by_ref() {
-        if board.is_game_over((*player).get_color()) {
+        if game.is_game_over((*player).get_color()) {
             println!("{} has lost!", (*player).get_name());
             println!("{} has won!", (players_cyclic_iter.next()).unwrap().get_name());
             break;
@@ -64,7 +69,7 @@ fn main() {
             if ac.as_any().downcast_ref::<game_actions::ActionMove>().is_some() {
                 if let Some(ac_move) = ac.as_any().downcast_ref::<game_actions::ActionMove>() {
                     println!("Move: {:?}", ac_move);
-                    match board.move_piece(ac_move) {
+                    match game.move_piece(ac_move) {
                         Ok(_) => {
                             action_valid = true;
                         }

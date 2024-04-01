@@ -1,15 +1,7 @@
-use crate::board_content::BoardContent;
+use crate::checkers_board::CheckersBoard;
 
 pub trait CheckersUi {
     fn splash_screen(&self);
-    fn draw_board(&self, bc: &BoardContent);
+    fn draw_board(&self, bc: &CheckersBoard);
 }
-
-/*/
-impl BoardObserver for dyn CheckersUi {
-    fn update(&self, bc: &BoardContent) {
-        self.draw_board(bc);
-    }
-}
-*/
 

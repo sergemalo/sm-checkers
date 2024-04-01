@@ -25,6 +25,6 @@ impl CheckersBoard {
     }
 }
 
-pub trait BoardObserver {
-    fn update(&self, bc: &CheckersBoard);
+pub trait GameBoardObserver {
+    fn update(&mut self, bc: &CheckersBoard);
 }

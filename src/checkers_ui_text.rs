@@ -3,7 +3,7 @@ extern crate ansi_term;
 use ansi_term::Colour::Red;
 
 use crate::checkers_ui::CheckersUi;
-use crate::board_content::*;
+use crate::checkers_board::*;
 
 
 const WHITE_MAN: char = '\u{26C0}';
@@ -65,8 +65,8 @@ impl CheckersUiText {
 }
 
 
-impl BoardObserver for CheckersUiText {
-    fn update(&self, bc: &BoardContent) {
+impl GameBoardObserver for CheckersUiText {
+    fn update(&mut self, bc: &CheckersBoard) {
         self.draw_board(bc);
     }
 }
@@ -78,7 +78,7 @@ impl CheckersUi for CheckersUiText {
         print_empty_board();
    }
 
-    fn draw_board(&self, bc: &BoardContent) {
+    fn draw_board(&self, bc: &CheckersBoard) {
         println!("");
         for i in 0..64 {
             print!("| ");

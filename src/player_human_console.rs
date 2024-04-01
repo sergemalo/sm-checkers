@@ -2,7 +2,7 @@ use std::io;
 use std::io::Write;
 
 use crate::player_trait::*;
-use crate::board_content::*;
+use crate::checkers_board::*;
 use crate::game_actions::*;
 
 #[derive(Clone)]
@@ -78,8 +78,8 @@ impl Player for PlayerHumanConsole {
     }
 }
 
-impl BoardObserver for PlayerHumanConsole {
-    fn update(&self, _bc: &BoardContent) {
+impl GameBoardObserver for PlayerHumanConsole {
+    fn update(&mut self, _bc: &CheckersBoard) {
         //println!("{} - Received new board", self.name);
     }
 

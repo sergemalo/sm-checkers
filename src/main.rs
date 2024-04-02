@@ -41,31 +41,29 @@ fn main() {
     let mut game = CheckersGame::new();
 
     // Create Players
-    let mut players = vec![];
-    players.push(PlayerHumanConsole::new("Player 1", PlayerColor::Black));
-    players.push(PlayerHumanConsole::new("Player 2", PlayerColor::Red));
-    //players.push(PlayerBotRandom::new("ZE BOT", PlayerColor::Red));
+    let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", PlayerColor::Black)));
+    let bot = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT", PlayerColor::Red)));
 
-
-    // Add UI and Players to the Board's Observers
-    // TODO: NOT SURE ABOUT THIS - CLONE ?
     game.register_observer(gui.clone());
-    game.register_observer(Rc::new(RefCell::new(players[0].clone()))); 
-    game.register_observer(Rc::new(RefCell::new(players[1].clone())));
+    game.register_observer(human.clone()); 
+    game.register_observer(bot.clone()); 
+
+
+    let players: Vec<Rc<RefCell<dyn Player>>> = vec![human.clone(), bot.clone()];
 
     let mut players_cyclic_iter = CyclicIterator::new(&players);
     for player in players_cyclic_iter.by_ref() {
-        if game.is_game_over((*player).get_color()) {
-            println!("{} has lost!", (*player).get_name());
-            println!("{} has won!", (players_cyclic_iter.next()).unwrap().get_name());
+        if game.is_game_over((*player).borrow().get_color()) {
+            println!("{} has lost!", (*player).borrow().get_name());
+            println!("{} has won!", (players_cyclic_iter.next()).unwrap().borrow().get_name());
             break;
         }
 
         let mut action_valid = false;
         while !action_valid {
-            println!("{}'s turn - You have the {:?} pieces", (*player).get_name(), (*player).get_color());
+            println!("{}'s turn - You have the {:?} pieces", (*player).borrow().get_name(), (*player).borrow().get_color());
 
-            let ac = player.play_turn();
+            let ac = player.borrow().play_turn();
             if ac.as_any().downcast_ref::<game_actions::ActionMove>().is_some() {
                 if let Some(ac_move) = ac.as_any().downcast_ref::<game_actions::ActionMove>() {
                     println!("Move: {:?}", ac_move);

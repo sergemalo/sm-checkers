@@ -41,21 +41,26 @@ fn main() {
     let mut game = CheckersGame::new();
 
     // Create Players
-    let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", PlayerColor::Black)));
-    let bot = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT", PlayerColor::Red)));
+    //let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", PlayerColor::Black)));
+    let bot1 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT A", PlayerColor::Black)));
+    let bot2 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT II", PlayerColor::Red)));
 
     game.register_observer(gui.clone());
-    game.register_observer(human.clone()); 
-    game.register_observer(bot.clone()); 
+    //game.register_observer(human.clone()); 
+    game.register_observer(bot1.clone()); 
+    game.register_observer(bot2.clone()); 
 
 
-    let players: Vec<Rc<RefCell<dyn Player>>> = vec![human.clone(), bot.clone()];
+    //let players: Vec<Rc<RefCell<dyn Player>>> = vec![human.clone(), bot.clone()];
+    let players: Vec<Rc<RefCell<dyn Player>>> = vec![bot1.clone(), bot2.clone()];
 
     let mut players_cyclic_iter = CyclicIterator::new(&players);
+    let mut nb_turns = 0;
     for player in players_cyclic_iter.by_ref() {
         if game.is_game_over((*player).borrow().get_color()) {
             println!("{} has lost!", (*player).borrow().get_name());
             println!("{} has won!", (players_cyclic_iter.next()).unwrap().borrow().get_name());
+            println!("Number of turns: {}", nb_turns);
             break;
         }
 
@@ -70,6 +75,7 @@ fn main() {
                     match game.move_piece(ac_move) {
                         Ok(_) => {
                             action_valid = true;
+                            nb_turns += 1;
                         }
                         Err(e) => {
                             println!("Your move was invalid: {}", e);

@@ -582,6 +582,23 @@ mod tests {
         assert_shifts(&board, index, &[]);
 
 
+        let index = 30;
+        setup_board_with_one_piece(&mut board, index, TileState::RedMan);
+        assert_shifts(&board, index, &[(index, 25), (index, 26)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedMan);
+        board.tiles[25] = TileState::RedMan;
+        assert_shifts(&board, index, &[(index, 26)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedMan);
+        board.tiles[26] = TileState::RedMan;
+        assert_shifts(&board, index, &[(index, 25)]);
+
+        setup_board_with_one_piece(&mut board, index, TileState::RedMan);
+        board.tiles[25] = TileState::RedMan;
+        board.tiles[26] = TileState::RedMan;
+        assert_shifts(&board, index, &[]);
+
         let index = 31;
         setup_board_with_one_piece(&mut board, index, TileState::RedMan);
         assert_shifts(&board, index, &[(index, 26), (index, 27)]);

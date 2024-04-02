@@ -33,7 +33,7 @@ impl Player for PlayerBotRandom {
     fn play_turn(&self) -> Box<dyn GameAction> {
         // Find all of my pieces
         let mut pieces = CheckersRules::get_player_pieces_indexes(&self.board, self.color);
-
+        //println!("{} - pieces: {:?}", self.name, pieces);
         // Check if a jump is possible, one piece at a time, randomly
         let mut pieces_for_jump = pieces.clone();
         while !pieces_for_jump.is_empty() {
@@ -61,7 +61,7 @@ impl Player for PlayerBotRandom {
                 let mut shift_vec = vec![shifts[shift_choice].from()];
                 shift_vec.push(shifts[shift_choice].to);
                 let action = ActionMove::new(self.color, &shift_vec);
-                println!("{} - shifting: {:?}", self.name, action);
+                println!("{} - piece idx: {}, choice: {}, shifting: {:?}", self.name, rand_piece_idx, shift_choice, action);
                 return Box::new(action);                
             }
             else {

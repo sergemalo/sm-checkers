@@ -144,13 +144,13 @@ impl CheckersGame {
 
     pub fn is_game_over(&self, next_player_color: PlayerColor) -> bool {
         let pieces = CheckersRules::get_player_pieces_indexes(&self.game_board, next_player_color);
-        for (i, _p) in pieces.iter().enumerate(){
-            if CheckersRules::get_possible_shifts(&self.game_board, i).len() > 0 {
+        for p in pieces.iter() {
+            if CheckersRules::get_possible_shifts(&self.game_board, *p).len() > 0 {
                 return false
             }
         }
-        for (i, _p) in pieces.iter().enumerate(){
-            if CheckersRules::get_possible_jumps(&self.game_board, i).len() > 0 {
+        for p in pieces.iter() {
+            if CheckersRules::get_possible_jumps(&self.game_board, *p).len() > 0 {
                 return false
             }
         }
@@ -386,6 +386,11 @@ mod tests {
         game.game_board.tiles[10] = TileState::RedMan;
         assert_eq!(game.is_game_over(PlayerColor::Black), true);
 
+        game.game_board.tiles.fill(TileState::Empty);
+        game.game_board.tiles[4] = TileState::BlackMan;
+        game.game_board.tiles[6] = TileState::BlackMan;
+        game.game_board.tiles[8] = TileState::RedMan;
+        assert_eq!(game.is_game_over(PlayerColor::Black), false);
 
     }
 

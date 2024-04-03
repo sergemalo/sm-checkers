@@ -6,7 +6,7 @@ https://www.usatoday.com/story/graphics/2023/01/23/how-to-play-checkers-rules-st
 This project will help me to learn and pratice the following this
 
 1. Rust language programming
-2. Design Patterns: Observer
+2. Design Patterns: Observer, Stratgegy, Command
 3. Rust unit testing
 4. Github CI/CD pipeline for Rust
 5. Machine Learning: I would like to create a Checkers learner

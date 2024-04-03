@@ -7,9 +7,9 @@ This project will help me to learn and pratice the following this
 
 1. Rust language programming [Always WIP]
 2. Design Patterns:
-   Observer [DONE]
-   Strategy [Partial, each Player implements a different strategy]
-   Command [TODO, each players sends commands to the Game Ctrl - TBD: add "undo" feature]
+   * Observer [DONE]
+   * Strategy [Partial, each Player implements a different strategy]
+   * Command [TODO, each players sends commands to the Game Ctrl - TBD: add "undo" feature]
 4. Rust unit testing [DONE, easy with cargo test]
 5. Github CI/CD pipeline for Rust [DONE, all in place!]
 6. Machine Learning: I would like to create a Checkers learner [TODO]

@@ -10,6 +10,7 @@ use crate::checkers_game::Subject;
 use crate::player_trait::*;
 use crate::player_human_console::PlayerHumanConsole;
 use crate::player_bot_random::PlayerBotRandom;
+use crate::player_bot_ai::PlayerBotAI;
 use crate::cyclic_iterator::CyclicIterator;
 
 
@@ -24,6 +25,7 @@ mod cyclic_iterator;
 mod player_trait;
 mod player_human_console;
 mod player_bot_random;
+mod player_bot_ai;
 
 mod game_actions;
 mod movements;
@@ -42,8 +44,10 @@ fn main() {
 
     // Create Players
     //let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", PlayerColor::Black)));
-    let bot1 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT A", PlayerColor::Black)));
-    let bot2 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT II", PlayerColor::Red)));
+    //let bot1 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT A", PlayerColor::Black)));
+    //let bot2 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT II", PlayerColor::Red)));
+    let bot1 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 1", PlayerColor::Black)));
+    let bot2 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 2", PlayerColor::Red)));
 
     game.register_observer(gui.clone());
     //game.register_observer(human.clone()); 

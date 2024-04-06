@@ -6,6 +6,13 @@ pub enum PlayerColor {
     Black
 }
 
+pub fn opposite_color(color_in: PlayerColor) -> PlayerColor {
+    match color_in {
+        PlayerColor::Red => PlayerColor::Black,
+        PlayerColor::Black => PlayerColor::Red
+    }
+}
+
 pub trait Player {
     fn get_name(&self) -> String;
     fn get_color(&self) -> PlayerColor;

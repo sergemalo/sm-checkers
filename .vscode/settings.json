@@ -1,5 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
-        ".\\Cargo.toml"
+        ".\\Cargo.toml",
+        ".\\cb-sm-cherckers-engine\\Cargo.toml",
+        ".\\cb-sm-cherckers-engine\\Cargo.toml"
     ]
 }

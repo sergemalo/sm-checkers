@@ -98,7 +98,12 @@ impl PlayerBotAI {
             WeightType::PlayerJumps => 1.0
         }
     }
+    fn choose_move(&self) -> Box<dyn GameAction> {
+        
+    )}
+
     */
+
 
 }
 

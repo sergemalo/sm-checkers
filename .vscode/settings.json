@@ -2,6 +2,15 @@
     "rust-analyzer.linkedProjects": [
         ".\\Cargo.toml",
         ".\\cb-sm-cherckers-engine\\Cargo.toml",
-        ".\\cb-sm-cherckers-engine\\Cargo.toml"
+        ".\\cb-sm-cherckers-engine\\Cargo.toml",
+        ".\\sm-checkers-base\\Cargo.toml",
+        ".\\sm-checkers-base\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml",
+        ".\\cb_sm_cherckers_engine\\Cargo.toml"
     ]
 }

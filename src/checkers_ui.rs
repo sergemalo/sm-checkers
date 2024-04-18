@@ -1,4 +1,4 @@
-use crate::checkers_board::CheckersBoard;
+use sm_checkers_base::checkers_board::*;
 
 pub trait CheckersUi {
     fn splash_screen(&self);

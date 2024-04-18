@@ -1,6 +1,9 @@
+
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::checkers_board::*;
+
+use sm_checkers_base::checkers_board::*;
+
 use crate::movements::*;
 use crate::player_trait::PlayerColor;
 use crate::game_actions::ActionMove;

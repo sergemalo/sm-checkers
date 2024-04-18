@@ -1,8 +1,9 @@
 use rand::Rng;
+use sm_checkers_base::checkers_board::*;
+
 use crate::player_trait::*;
 use crate::game_actions::*;
 use crate::checkers_rules::*;
-use crate::checkers_board::*;
 use crate::movements::*;
 
 pub struct PlayerBotRandom {

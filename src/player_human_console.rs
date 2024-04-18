@@ -1,8 +1,8 @@
 use std::io;
 use std::io::Write;
+use sm_checkers_base::checkers_board::*;
 
 use crate::player_trait::*;
-use crate::checkers_board::*;
 use crate::game_actions::*;
 
 #[derive(Clone)]

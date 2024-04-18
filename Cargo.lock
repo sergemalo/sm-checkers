@@ -76,7 +76,12 @@ version = "0.1.0"
 dependencies = [
  "ansi_term",
  "rand",
+ "sm_checkers_base",
 ]
+
+[[package]]
+name = "sm_checkers_base"
+version = "0.1.0"
 
 [[package]]
 name = "wasi"

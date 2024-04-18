@@ -1,11 +1,8 @@
 [package]
-name = "sm-checkers"
+name = "sm_checkers_base"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sm_checkers_base = { path = "sm_checkers_base" }
-ansi_term = "0.12.1"
-rand = "0.8.5"

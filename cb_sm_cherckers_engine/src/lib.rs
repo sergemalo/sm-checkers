@@ -14,6 +14,11 @@
 //    struct coor del[12]; // squares where men are removed
 //    int delpiece[12]; // piece type which is removed
 //  }
+// Getmove should return a value between 0 and 3, defined as follows:
+// #define DRAW 0
+// #define WIN 1
+// #define LOSS 2
+// #define UNKNOWN 3
 //
 //
 // int WINAPI enginecommand(char command[256], char reply[1024]);
@@ -24,6 +29,9 @@ use std::io::Write;
 
 use std::os::raw::{c_char, c_int, c_double};
 use std::ffi::{CString, CStr};
+
+use sm_checkers_base::checkers_board::*;
+
 
 // Define the CBmove struct
 #[repr(C)]
@@ -49,7 +57,7 @@ pub struct coor {
 const BOARD_SIZE: usize = 8;
 #[no_mangle]
 pub extern "stdcall" fn getmove(
-    board: *mut [c_int; BOARD_SIZE],    // int board[8][8], 
+    board: *mut [c_int; BOARD_SIZE*BOARD_SIZE],    // int board[8][8], 
     color:c_int,                        // int color, 
     maxtime: c_double,                  // double maxtime, 
     str: *mut c_char,                   // char str[1024], 
@@ -58,10 +66,79 @@ pub extern "stdcall" fn getmove(
     moreinfo: c_int,                    // int moreinfo,
     cb_move: *mut CBmove) -> c_int {       // struct CBmove *move
 
+        
+    let path = "c:\\tmp\\sm_checkers_engine_cmd_log.txt";
 
-    // Function body here
-    3 // Return value example, modify as needed
+    {
+        // Open the file with options to create and append
+        let mut file = OpenOptions::new()
+            .create(true)  // Create the file if it does not exist
+            .append(true)  // Append to the file if it exists
+            .open(path)
+            .expect("Failed to open file");
+        
+        // Write some data to the file
+        writeln!(file, "GETMOVE: ").unwrap();
+    }
+    
+    
+
+    // Transform board to chckersBoard
+    let mut my_board = adapt_board_to_checkers_board(board);
+    // Notify board observers
+
+
+    return 3;
 }
+
+fn adapt_board_to_checkers_board(board: *mut [c_int; BOARD_SIZE*BOARD_SIZE]) -> CheckersBoard {
+    
+    let path = "c:\\tmp\\sm_checkers_engine_cmd_log.txt";
+
+    // Open the file with options to create and append
+    let mut file = OpenOptions::new()
+        .create(true)  // Create the file if it does not exist
+        .append(true)  // Append to the file if it exists
+        .open(path)
+        .expect("Failed to open file");
+    
+    // Write some data to the file
+    writeln!(file, "BOARD:").unwrap();
+
+    let mut my_board = sm_checkers_base::CheckersBoard::new();
+
+    // Unsafe required because we dereference the pointer received by our API.
+    unsafe {
+        let mut src_tile_index = 0;
+        let mut dst_tile_index = 0;
+        if let Some(b) = board.as_mut() {  // Check if the pointer is not null and can be safely converted to a reference
+            for &value in b.iter() {
+            
+                writeln!(file, "{}", value).unwrap();
+                dst_tile_index = 28 + (src_tile_index / 16) - ((src_tile_index % 8) * 4);
+                if ( ( (src_tile_index / 0x8 & 0x1) == 0 && (src_tile_index & 0x1) == 0) ||
+                     ( (src_tile_index / 0x8 & 0x1) == 1 && (src_tile_index & 0x1) == 1)) {
+                    writeln!(file, "[{}] = {}", dst_tile_index, value).unwrap();
+                    
+                    match (value & 0x7) {
+                        0x0 => my_board.tiles[dst_tile_index] = TileState::Empty,
+                        0x6 => my_board.tiles[dst_tile_index] = TileState::BlackMan,
+                        0xA => my_board.tiles[dst_tile_index] = TileState::BlackKnight,
+                        0x5 => my_board.tiles[dst_tile_index] = TileState::RedMan,
+                        0x9 => my_board.tiles[dst_tile_index] = TileState::RedKnight,
+                        _ => panic!("Invalid tile value: {}", value)
+                    }
+                }
+                src_tile_index += 1;
+            }
+        }
+    }
+
+    writeln!(file, "BOARD DONE").unwrap();
+
+    return my_board;
+}
+
 
 
 
@@ -89,7 +166,8 @@ pub extern "stdcall" fn enginecommand(command: *mut c_char, reply: *mut c_char) 
     let cmd = command_str.to_lowercase();
 
     if cmd == "about" {
-        response_str = "Serge Malo's Rust Checkers Engine";
+        //response_str = "Serge Malo's Rust Checkers Engine\r\nhttps://github.com/smalo/sm_checkers_engine\r\n";
+        response_str = "Serge 1.0\r\n";
     }
     else  if cmd == "get protocolversion" {
         response_str = "2";
@@ -113,17 +191,17 @@ pub extern "stdcall" fn enginecommand(command: *mut c_char, reply: *mut c_char) 
         response_str = "https://www.fierz.ch/cbdeveloper.php";
     }
     else  if cmd == "name" {
-        response_str = "sm_checkers_engine";
+        response_str = "cb_sm_checkers_engine\r";
     }
 
-    writeln!(file, "ANSER: <{}>", response_str).unwrap();
-
-
     let reply_cstring = CString::new(response_str).expect("Failed to create reply CString");
+    writeln!(file, "ANSWER: <{}> {}", response_str, response_str.len()).unwrap();
+    writeln!(file, "ANSWER LEN:  {}", reply_cstring.as_bytes().len()).unwrap();
     unsafe {
         std::ptr::copy_nonoverlapping(reply_cstring.as_ptr(), reply, reply_cstring.as_bytes().len());
     }
 
+ 
     0 // Return value example, modify as needed
 }
 

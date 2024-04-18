@@ -16,7 +16,6 @@ use crate::cyclic_iterator::CyclicIterator;
 
 mod checkers_rules;
 mod checkers_game;
-mod checkers_board;
 
 mod checkers_ui;
 mod checkers_ui_text;

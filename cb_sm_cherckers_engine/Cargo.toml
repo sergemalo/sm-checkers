@@ -1,0 +1,13 @@
+[package]
+name = "cb_sm_cherckers_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sm_checkers_base = { path = "../sm_checkers_base" }
+
+# BUILDING FOR WIN32:
+# cargo build --release --target=i686-pc-windows-msvc

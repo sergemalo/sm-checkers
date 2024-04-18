@@ -2,8 +2,9 @@ extern crate ansi_term;
 
 use ansi_term::Colour::Red;
 
+
+use sm_checkers_base::checkers_board::*;
 use crate::checkers_ui::CheckersUi;
-use crate::checkers_board::*;
 
 
 const WHITE_MAN: char = '\u{26C0}';

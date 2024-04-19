@@ -26,11 +26,18 @@ jobs:
       with:
         command: test
         args: --verbose
-    - name: Run tests in all subdirectories
+    - name: Run tests in sm_checkers_base
       run: |
-        for dir in */ ; do
-          if [ -f "$dir/Cargo.toml" ]; then
-            echo "Running tests in $dir"
-            (cd "$dir" && cargo test)
-          fi
-        done
+        cd sm_checkers_base
+        cargo test        
+
+
+## DOES NOT WORK UNDER WINDOWS
+#    - name: Run tests in all subdirectories
+#      run: |
+#        for dir in */ ; do
+#          if [ -f "$dir/Cargo.toml" ]; then
+##            echo "Running tests in $dir"
+#            (cd "$dir" && cargo test)
+#          fi
+#        done

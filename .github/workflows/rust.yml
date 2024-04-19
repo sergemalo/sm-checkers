@@ -26,3 +26,11 @@ jobs:
       with:
         command: test
         args: --verbose
+    - name: Run tests in all subdirectories
+      run: |
+        for dir in */ ; do
+          if [ -f "$dir/Cargo.toml" ]; then
+            echo "Running tests in $dir"
+            (cd "$dir" && cargo test)
+          fi
+        done

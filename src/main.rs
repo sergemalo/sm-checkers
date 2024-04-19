@@ -1,34 +1,24 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use sm_checkers_base::Color;
+
+use sm_checkers_players::*;
+use crate::cyclic_iterator::CyclicIterator;
+
 use crate::checkers_ui::CheckersUi;
 use crate::checkers_ui_text::CheckersUiText;
 
 use crate::checkers_game::CheckersGame;
 use crate::checkers_game::Subject;
 
-use crate::player_trait::*;
-use crate::player_human_console::PlayerHumanConsole;
-use crate::player_bot_random::PlayerBotRandom;
-use crate::player_bot_ai::PlayerBotAI;
-use crate::cyclic_iterator::CyclicIterator;
 
-
-mod checkers_rules;
 mod checkers_game;
 
 mod checkers_ui;
 mod checkers_ui_text;
 
 mod cyclic_iterator;
-mod player_trait;
-mod player_human_console;
-mod player_bot_random;
-mod player_bot_ai;
-
-mod game_actions;
-mod movements;
-
 
 
 fn main() {
@@ -42,11 +32,11 @@ fn main() {
     let mut game = CheckersGame::new();
 
     // Create Players
-    //let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", PlayerColor::Black)));
-    //let bot1 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT A", PlayerColor::Black)));
-    //let bot2 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT II", PlayerColor::Red)));
-    let bot1 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 1", PlayerColor::Black)));
-    let bot2 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 2", PlayerColor::Red)));
+    //let human = Rc::new(RefCell::new(PlayerHumanConsole::new("Player 1", Color::Black)));
+    //let bot1 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT A", Color::Black)));
+    //let bot2 = Rc::new(RefCell::new(PlayerBotRandom::new("ZE BOT II", Color::Red)));
+    let bot1 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 1", Color::Black)));
+    let bot2 = Rc::new(RefCell::new(PlayerBotAI::new("AI BOT 2", Color::Red)));
 
     game.register_observer(gui.clone());
     //game.register_observer(human.clone()); 
@@ -72,8 +62,8 @@ fn main() {
             println!("{}'s turn - You have the {:?} pieces", (*player).borrow().get_name(), (*player).borrow().get_color());
 
             let ac = player.borrow().play_turn();
-            if ac.as_any().downcast_ref::<game_actions::ActionMove>().is_some() {
-                if let Some(ac_move) = ac.as_any().downcast_ref::<game_actions::ActionMove>() {
+            if ac.as_any().downcast_ref::<player_actions::ActionMove>().is_some() {
+                if let Some(ac_move) = ac.as_any().downcast_ref::<player_actions::ActionMove>() {
                     println!("Move: {:?}", ac_move);
                     match game.move_piece(ac_move) {
                         Ok(_) => {
@@ -86,8 +76,8 @@ fn main() {
                     }
                 }
             }
-            else if ac.as_any().downcast_ref::<game_actions::ActionQuit>().is_some() {
-                if let Some(ac_quit) = ac.as_any().downcast_ref::<game_actions::ActionQuit>() {
+            else if ac.as_any().downcast_ref::<player_actions::ActionQuit>().is_some() {
+                if let Some(ac_quit) = ac.as_any().downcast_ref::<player_actions::ActionQuit>() {
                     println!("Quit: {:?}", ac_quit);
                     println!("Bye!");
                     std::process::exit(0);

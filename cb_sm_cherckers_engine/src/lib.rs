@@ -101,19 +101,6 @@ pub extern "stdcall" fn getmove(
     // Notify board observers
 
     unsafe {
-        //(*cb_move).jumps = 0;
-        //(*cb_move).newpiece = 0x6;
-        //(*cb_move).oldpiece = 0x6;
-        //(*cb_move).from.x = 2;
-        //(*cb_move).from.y = 2;
-        //(*cb_move).to.x = 3;
-        //(*cb_move).to.y = 3;
-
-        //(*cb_move).path[0].x = 0;
-        //(*cb_move).path[0].y = 0;
-        //(*cb_move).del[0].x = 0;
-        //(*cb_move).del[0].y = 0;
-        //(*cb_move).delpiece[0] = 0x0;
 
         (*board)[2] = 0x0;
         (*board)[11] = 0x6;

@@ -1,12 +1,12 @@
 use std::any::Any;
-use crate::player_trait::PlayerColor;
+use sm_checkers_base::player_colors::Color;
 
 
 pub enum ActionType {
     Quit,
     Move
 }
-pub trait GameAction {
+pub trait Action {
     fn get_type(&self) -> ActionType;
     fn as_any(&self) -> &dyn Any;
 }
@@ -14,7 +14,7 @@ pub trait GameAction {
 #[derive(Debug)]
 pub struct ActionQuit {}
 
-impl GameAction for ActionQuit {
+impl Action for ActionQuit {
     fn get_type(&self) -> ActionType {
         ActionType::Quit
     }
@@ -32,11 +32,11 @@ impl ActionQuit {
 
 #[derive(Debug)]
 pub struct ActionMove {
-    pub player_color: PlayerColor,
+    pub player_color: Color,
     pub tiles: Vec<usize>
 }
 
-impl GameAction for ActionMove {
+impl Action for ActionMove {
     fn get_type(&self) -> ActionType {
         ActionType::Move
     }
@@ -46,7 +46,7 @@ impl GameAction for ActionMove {
 }
 
 impl ActionMove {
-    pub fn new(player_color: PlayerColor, tiles: &Vec<usize>) -> ActionMove {
+    pub fn new(player_color: Color, tiles: &Vec<usize>) -> ActionMove {
         ActionMove {
             player_color,
             tiles: (*tiles).clone()

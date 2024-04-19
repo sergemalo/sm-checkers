@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sm_checkers_base = { path = "../sm_checkers_base" }
+sm_checkers_players = { path = "../sm_checkers_players" }
 
 # BUILDING FOR WIN32:
 # cargo build --release --target=i686-pc-windows-msvc

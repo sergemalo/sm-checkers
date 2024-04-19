@@ -1,19 +1,20 @@
 use rand::Rng;
 use sm_checkers_base::checkers_board::*;
+use sm_checkers_base::checkers_rules::*;
+use sm_checkers_base::movements::*;
+use sm_checkers_base::player_colors::Color;
 
 use crate::player_trait::*;
-use crate::game_actions::*;
-use crate::checkers_rules::*;
-use crate::movements::*;
+use crate::player_actions::*;
 
 pub struct PlayerBotRandom {
     name: String,
-    color: PlayerColor,
+    color: Color,
     board: CheckersBoard
 }
 
 impl PlayerBotRandom {
-    pub fn new(name_in: & str, color_in: PlayerColor) -> Self {
+    pub fn new(name_in: & str, color_in: Color) -> Self {
         PlayerBotRandom {
             name: name_in.to_owned(),
             color: color_in,
@@ -23,7 +24,7 @@ impl PlayerBotRandom {
 }
 
 impl Player for PlayerBotRandom {
-    fn get_color(&self) -> PlayerColor {
+    fn get_color(&self) -> Color {
         self.color.clone()
     }
 
@@ -31,7 +32,7 @@ impl Player for PlayerBotRandom {
         self.name.clone()
     }
 
-    fn play_turn(&self) -> Box<dyn GameAction> {
+    fn play_turn(&self) -> Box<dyn Action> {
         // Find all of my pieces
         let mut pieces = CheckersRules::get_player_pieces_indexes(&self.board, self.color);
         //println!("{} - pieces: {:?}", self.name, pieces);

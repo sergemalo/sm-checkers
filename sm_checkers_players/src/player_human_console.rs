@@ -1,18 +1,19 @@
 use std::io;
 use std::io::Write;
 use sm_checkers_base::checkers_board::*;
+use sm_checkers_base::player_colors::Color;
 
 use crate::player_trait::*;
-use crate::game_actions::*;
+use crate::player_actions::*;
 
 #[derive(Clone)]
 pub struct PlayerHumanConsole {
     name: String,
-    color: PlayerColor
+    color: Color
 }
 
 impl PlayerHumanConsole {
-    pub fn new(name_in: & str, color_in: PlayerColor) -> Self {
+    pub fn new(name_in: & str, color_in: Color) -> Self {
         PlayerHumanConsole {
             name: name_in.to_owned(),
             color: color_in
@@ -21,13 +22,13 @@ impl PlayerHumanConsole {
 }
 
 impl Player for PlayerHumanConsole {
-    fn get_color(&self) -> PlayerColor {
+    fn get_color(&self) -> Color {
         self.color.clone()
     }
     fn get_name(&self) -> String {
         self.name.clone()
     }
-    fn play_turn(&self) -> Box<dyn GameAction> {
+    fn play_turn(&self) -> Box<dyn Action> {
         println!("{} - Please write move (ex: \"m 1, 2\") or quit with letter \"q\":", self.name);
 
         let mut input = String::new();

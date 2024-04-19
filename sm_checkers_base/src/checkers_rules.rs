@@ -1,6 +1,6 @@
-use sm_checkers_base::checkers_board::*;
+use crate::checkers_board::*;
 use crate::movements::*;
-use crate::player_trait::PlayerColor;
+use crate::player_colors::Color;
 
 pub struct CheckersRules {
 }
@@ -291,11 +291,11 @@ impl CheckersRules {
         } 
     }       
 
-    pub fn get_player_pieces_indexes(board: &CheckersBoard, player_color: PlayerColor) -> Vec<usize> {
+    pub fn get_player_pieces_indexes(board: &CheckersBoard, player_color: Color) -> Vec<usize> {
         let mut player_pieces_indexes = Vec::new();
         for (i, tile) in board.tiles.iter().enumerate() {
-            if (player_color == PlayerColor::Black && (*tile == TileState::BlackMan || *tile == TileState::BlackKnight)) || 
-               (player_color == PlayerColor::Red && (*tile == TileState::RedMan || *tile == TileState::RedKnight)) {
+            if (player_color == Color::Black && (*tile == TileState::BlackMan || *tile == TileState::BlackKnight)) || 
+               (player_color == Color::Red && (*tile == TileState::RedMan || *tile == TileState::RedKnight)) {
                 player_pieces_indexes.push(i);
             }
         }

@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "sm-checkers-base"
+name = "sm_checkers_base"
 version = "0.1.0"

@@ -1,21 +1,23 @@
 use rand::Rng;
 use sm_checkers_base::checkers_board::*;
+use sm_checkers_base::checkers_rules::*;
+use sm_checkers_base::movements::*;
+use sm_checkers_base::player_colors::*;
 
 use crate::player_trait::*;
-use crate::game_actions::*;
-use crate::checkers_rules::*;
-use crate::movements::*;
+use crate::player_actions::*;
+
 
 pub struct PlayerBotAI {
     name: String,
-    color: PlayerColor,
+    color: Color,
     board: CheckersBoard,
     weights: Vec<f64>,
     eta: f64
 }
 
 impl PlayerBotAI {
-    pub fn new(name_in: & str, color_in: PlayerColor) -> Self {
+    pub fn new(name_in: & str, color_in: Color) -> Self {
         PlayerBotAI {
             name: name_in.to_owned(),
             color: color_in,
@@ -46,14 +48,14 @@ impl PlayerBotAI {
 
         let my_pieces = CheckersRules::get_player_pieces_indexes(&self.board, self.color);
         let mut my_knights_tile_state = TileState::BlackKnight;
-        if self.color == PlayerColor::Red {
+        if self.color == Color::Red {
             my_knights_tile_state = TileState::RedKnight;
         }
         let my_knights_count = my_pieces.iter().filter(|&x| self.board.tiles[*x] == my_knights_tile_state).count();
 
         let opp_pieces = CheckersRules::get_player_pieces_indexes(&self.board, opposite_color(self.color));
         let mut opp_knights_tile_state = TileState::RedKnight;
-        if self.color == PlayerColor::Red {
+        if self.color == Color::Red {
             opp_knights_tile_state = TileState::BlackKnight;
         }
         let opp_knights_count = opp_pieces.iter().filter(|&x| self.board.tiles[*x] == opp_knights_tile_state).count();
@@ -99,7 +101,7 @@ impl PlayerBotAI {
             WeightType::PlayerJumps => 1.0
         }
     }
-    fn choose_move(&self) -> Box<dyn GameAction> {
+    fn choose_move(&self) -> Box<dyn Action> {
         
     )}
 
@@ -109,7 +111,7 @@ impl PlayerBotAI {
 }
 
 impl Player for PlayerBotAI {
-    fn get_color(&self) -> PlayerColor {
+    fn get_color(&self) -> Color {
         self.color.clone()
     }
 
@@ -117,7 +119,7 @@ impl Player for PlayerBotAI {
         self.name.clone()
     }
 
-    fn play_turn(&self) -> Box<dyn GameAction> {
+    fn play_turn(&self) -> Box<dyn Action> {
         // Find all of my pieces
         let mut pieces = CheckersRules::get_player_pieces_indexes(&self.board, self.color);
         //println!("{} - pieces: {:?}", self.name, pieces);

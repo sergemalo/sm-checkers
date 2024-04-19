@@ -1,7 +1,14 @@
 //
-//https://www.fierz.ch/cbdeveloper.php
+// https://www.fierz.ch/cbdeveloper.php
 //
-// int WINAPI getmove(int board[8][8], int color, double maxtime, char str[1024], int *playnow, int info, int moreinfo, struct CBmove *move);
+// int WINAPI getmove(int board[8][8], 
+//                    int color,
+//                    double maxtime,
+//                    char str[1024], 
+//                    int *playnow, 
+//                    int info, 
+//                    int moreinfo, 
+//                    struct CBmove *move);
 //
 // Where:
 // struct CBmove
@@ -22,6 +29,7 @@
 //
 //
 // int WINAPI enginecommand(char command[256], char reply[1024]);
+// int WINAPI enginecommand(char command[256], char reply[512]);  ===> MOST LIKELY
 
 
 use std::fs::OpenOptions;
@@ -30,8 +38,8 @@ use std::io::Write;
 use std::os::raw::{c_char, c_int, c_double};
 use std::ffi::{CString, CStr};
 
-use sm_checkers_base::checkers_board::*;
-
+use crate::cb_helpers::*;
+mod cb_helpers;
 
 // Define the CBmove struct
 #[repr(C)]
@@ -54,13 +62,12 @@ pub struct coor {
     y: c_int,
 }
 
-const BOARD_SIZE: usize = 8;
 #[no_mangle]
 pub extern "stdcall" fn getmove(
     board: *mut [c_int; BOARD_SIZE*BOARD_SIZE],    // int board[8][8], 
     color:c_int,                        // int color, 
     maxtime: c_double,                  // double maxtime, 
-    str: *mut c_char,                   // char str[1024], 
+    short_reply: *mut c_char,                   // char str[1024], 
     playnow: *mut c_int,                // int *playnow,
     info: c_int,                        // int info, 
     moreinfo: c_int,                    // int moreinfo,
@@ -71,79 +78,66 @@ pub extern "stdcall" fn getmove(
 
     {
         // Open the file with options to create and append
-        let mut file = OpenOptions::new()
+        let mut trace_file = OpenOptions::new()
             .create(true)  // Create the file if it does not exist
             .append(true)  // Append to the file if it exists
             .open(path)
             .expect("Failed to open file");
         
         // Write some data to the file
-        writeln!(file, "GETMOVE: ").unwrap();
+        writeln!(trace_file, "GETMOVE: ").unwrap();
+
+
+        writeln!(trace_file, "Info: {}", info).unwrap();
+        writeln!(trace_file, "Moreinfo: {}", moreinfo).unwrap();
+
+        writeln!(trace_file, "COLOR: {}", color).unwrap();
+        writeln!(trace_file, "MAXTIME: {}", maxtime).unwrap();
+
     }
-    
-    
 
     // Transform board to chckersBoard
-    let mut my_board = adapt_board_to_checkers_board(board);
+    let mut my_board = cb_board_2_checkers_board(board);
     // Notify board observers
+
+    unsafe {
+        //(*cb_move).jumps = 0;
+        //(*cb_move).newpiece = 0x6;
+        //(*cb_move).oldpiece = 0x6;
+        //(*cb_move).from.x = 2;
+        //(*cb_move).from.y = 2;
+        //(*cb_move).to.x = 3;
+        //(*cb_move).to.y = 3;
+
+        //(*cb_move).path[0].x = 0;
+        //(*cb_move).path[0].y = 0;
+        //(*cb_move).del[0].x = 0;
+        //(*cb_move).del[0].y = 0;
+        //(*cb_move).delpiece[0] = 0x0;
+
+        (*board)[2] = 0x0;
+        (*board)[11] = 0x6;
+        
+    }
+
+    let short_message = "Je pense...\n";
+    let short_message_cstring = CString::new(short_message).expect("Failed to create reply CString");
+    unsafe {
+        std::ptr::write_bytes(short_reply, 0, 1024);
+        std::ptr::copy_nonoverlapping(short_message_cstring.as_ptr(), short_reply, short_message_cstring.as_bytes().len());
+    }
+
+
+
+
+
 
 
     return 3;
 }
 
-fn adapt_board_to_checkers_board(board: *mut [c_int; BOARD_SIZE*BOARD_SIZE]) -> CheckersBoard {
-    
-    let path = "c:\\tmp\\sm_checkers_engine_cmd_log.txt";
 
-    // Open the file with options to create and append
-    let mut file = OpenOptions::new()
-        .create(true)  // Create the file if it does not exist
-        .append(true)  // Append to the file if it exists
-        .open(path)
-        .expect("Failed to open file");
-    
-    // Write some data to the file
-    writeln!(file, "BOARD:").unwrap();
-
-    let mut my_board = sm_checkers_base::CheckersBoard::new();
-
-    // Unsafe required because we dereference the pointer received by our API.
-    unsafe {
-        let mut src_tile_index = 0;
-        let mut dst_tile_index = 0;
-        if let Some(b) = board.as_mut() {  // Check if the pointer is not null and can be safely converted to a reference
-            for &value in b.iter() {
-            
-                writeln!(file, "{}", value).unwrap();
-                dst_tile_index = 28 + (src_tile_index / 16) - ((src_tile_index % 8) * 4);
-                if ( ( (src_tile_index / 0x8 & 0x1) == 0 && (src_tile_index & 0x1) == 0) ||
-                     ( (src_tile_index / 0x8 & 0x1) == 1 && (src_tile_index & 0x1) == 1)) {
-                    writeln!(file, "[{}] = {}", dst_tile_index, value).unwrap();
-                    
-                    match (value & 0x7) {
-                        0x0 => my_board.tiles[dst_tile_index] = TileState::Empty,
-                        0x6 => my_board.tiles[dst_tile_index] = TileState::BlackMan,
-                        0xA => my_board.tiles[dst_tile_index] = TileState::BlackKnight,
-                        0x5 => my_board.tiles[dst_tile_index] = TileState::RedMan,
-                        0x9 => my_board.tiles[dst_tile_index] = TileState::RedKnight,
-                        _ => panic!("Invalid tile value: {}", value)
-                    }
-                }
-                src_tile_index += 1;
-            }
-        }
-    }
-
-    writeln!(file, "BOARD DONE").unwrap();
-
-    return my_board;
-}
-
-
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////
 #[no_mangle]
 pub extern "stdcall" fn enginecommand(command: *mut c_char, reply: *mut c_char) -> c_int {
     let mut command_str = unsafe { CStr::from_ptr(command).to_str().unwrap() }; // Convert C string to Rust string
@@ -167,7 +161,7 @@ pub extern "stdcall" fn enginecommand(command: *mut c_char, reply: *mut c_char) 
 
     if cmd == "about" {
         //response_str = "Serge Malo's Rust Checkers Engine\r\nhttps://github.com/smalo/sm_checkers_engine\r\n";
-        response_str = "Serge 1.0\r\n";
+        response_str = "Serge 1.0";
     }
     else  if cmd == "get protocolversion" {
         response_str = "2";
@@ -191,13 +185,14 @@ pub extern "stdcall" fn enginecommand(command: *mut c_char, reply: *mut c_char) 
         response_str = "https://www.fierz.ch/cbdeveloper.php";
     }
     else  if cmd == "name" {
-        response_str = "cb_sm_checkers_engine\r";
+        response_str = "cb_sm_checkers_engine\n";
     }
 
     let reply_cstring = CString::new(response_str).expect("Failed to create reply CString");
     writeln!(file, "ANSWER: <{}> {}", response_str, response_str.len()).unwrap();
     writeln!(file, "ANSWER LEN:  {}", reply_cstring.as_bytes().len()).unwrap();
     unsafe {
+        std::ptr::write_bytes(reply, 0, 512);
         std::ptr::copy_nonoverlapping(reply_cstring.as_ptr(), reply, reply_cstring.as_bytes().len());
     }
 

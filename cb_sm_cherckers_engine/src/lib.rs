@@ -10,17 +10,8 @@
 //                    int moreinfo, 
 //                    struct CBmove *move);
 //
-// Where:
-// struct CBmove
-// {
-//    int jumps; // number of jumps in this move
-//    int newpiece; // moving piece after jump
-//    int oldpiece; // moving piece before jump
-//    struct coor from,to; // from,to squares of moving piece
-//    struct coor path[12]; // intermediate squares to jump to
-//    struct coor del[12]; // squares where men are removed
-//    int delpiece[12]; // piece type which is removed
-//  }
+// If you plan to write an engine which plays English/American checkers, you can immediately forget about the struct CBmove again.
+//
 // Getmove should return a value between 0 and 3, defined as follows:
 // #define DRAW 0
 // #define WIN 1
@@ -62,6 +53,76 @@ pub struct coor {
     y: c_int,
 }
 
+
+
+use std::sync::{Arc, Mutex, Once};
+use std::rc::Rc;
+use std::cell::RefCell;
+use sm_checkers_base::checkers_board::*;
+
+pub trait Singleton {
+    fn get_instance() -> Arc<Mutex<Self>> where Self: Sized + 'static;
+}
+
+// Define the Subject trait
+pub trait Subject {
+    fn register_observer(&mut self, bo: Rc<RefCell<dyn GameBoardObserver>>);
+    fn remove_observer(&mut self, bo: Rc<RefCell<dyn GameBoardObserver>>);
+    fn notify_observers(&self);
+}
+
+impl Subject for BoardReceiver {
+    fn register_observer(&mut self, bo: Rc<RefCell<dyn GameBoardObserver>>) {
+        self.observers.push(bo);
+    }
+
+    fn remove_observer(&mut self, bo: Rc<RefCell<dyn GameBoardObserver>>) {
+        let index = self.observers.iter().position(|o| Rc::ptr_eq(o, &bo));
+
+        if let Some(index) = index {
+            self.observers.remove(index);
+        }
+    }
+
+    fn notify_observers(&self) {
+        for observer in self.observers.iter() {
+            // Call the update method of the observer
+            observer.borrow_mut().update(&self.game_board);
+        }
+    }
+}
+
+impl Singleton for BoardReceiver {
+    fn get_instance() -> Arc<Mutex<Self>> {
+        static ONCE: Once = Once::new();
+        static mut SINGLETON: Option<Arc<Mutex<BoardReceiver>>> = None;
+
+        unsafe {
+            ONCE.call_once(|| {
+                // Initialize with default values or configuration
+                let br = BoardReceiver::new();
+                SINGLETON = Some(Arc::new(Mutex::new(br)));
+            });
+
+            SINGLETON.clone().unwrap()
+        }
+    }
+}
+
+pub struct BoardReceiver {
+    observers: Vec<Rc<RefCell<dyn GameBoardObserver>>>,
+    game_board: CheckersBoard
+}
+
+impl BoardReceiver {
+    fn new() -> BoardReceiver {
+        BoardReceiver {
+            observers: Vec::new(),
+            game_board: CheckersBoard::new()
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "stdcall" fn getmove(
     board: *mut [c_int; BOARD_SIZE*BOARD_SIZE],    // int board[8][8], 
@@ -71,7 +132,7 @@ pub extern "stdcall" fn getmove(
     playnow: *mut c_int,                // int *playnow,
     info: c_int,                        // int info, 
     moreinfo: c_int,                    // int moreinfo,
-    cb_move: *mut CBmove) -> c_int {       // struct CBmove *move
+    _cb_move: *mut CBmove) -> c_int {   // struct CBmove *move - UNUSED
 
         
     let path = "c:\\tmp\\sm_checkers_engine_cmd_log.txt";
@@ -88,17 +149,24 @@ pub extern "stdcall" fn getmove(
         writeln!(trace_file, "GETMOVE: ").unwrap();
 
 
-        writeln!(trace_file, "Info: {}", info).unwrap();
-        writeln!(trace_file, "Moreinfo: {}", moreinfo).unwrap();
-
         writeln!(trace_file, "COLOR: {}", color).unwrap();
         writeln!(trace_file, "MAXTIME: {}", maxtime).unwrap();
 
+        unsafe {
+            writeln!(trace_file, "PLAYNOW: {}", *playnow).unwrap();
+        }
+
+        writeln!(trace_file, "Info: {}", info).unwrap();
+        writeln!(trace_file, "Moreinfo: {}", moreinfo).unwrap();
+
+
     }
 
-    // Transform board to chckersBoard
-    let mut my_board = cb_board_2_checkers_board(board);
-    // Notify board observers
+    // Receive Board: Transform board to our reprensentation and notify all observers
+    let br = BoardReceiver::get_instance();
+    let mut br = br.lock().unwrap();
+    br.game_board = cb_board_2_checkers_board(board);
+    br.notify_observers();
 
     unsafe {
 

@@ -10,6 +10,11 @@ use sm_checkers_base::checkers_board::*;
 pub const BOARD_SIZE: usize = 8;
 
 
+//// TODOS:
+/// Fix warnins
+/// Add tests
+
+
 pub fn cb_board_2_checkers_board(board: *mut [c_int; BOARD_SIZE*BOARD_SIZE]) -> CheckersBoard {
     
     let path = "c:\\tmp\\sm_checkers_engine_cmd_log.txt";

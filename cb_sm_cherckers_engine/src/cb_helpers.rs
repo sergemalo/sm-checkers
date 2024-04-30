@@ -93,6 +93,29 @@ pub fn cb_board_2_checkers_board(board: *mut [c_int; BOARD_SIZE*BOARD_SIZE]) -> 
 }
 
 
+pub fn checkers_board_2_cb_board(my_board: &CheckersBoard, board: *mut [c_int; BOARD_SIZE*BOARD_SIZE])
+{
+    let mut dst_tile_index;
+    for i in 0..32 {
+        if (i % 8) < 4 {
+            dst_tile_index = 8*(1 + 2*(i%4)) + 7-(i/4);
+        }
+        else {
+            dst_tile_index = 16*(i%4) + 7-(i/4);
+        }
+        unsafe {
+            match my_board.tiles[i] {
+                TileState::Empty => (*board)[dst_tile_index] = CbTileState::Empty as c_int,
+                TileState::BlackMan => (*board)[dst_tile_index] = CbTileState::BlackMan as c_int,
+                TileState::BlackKnight => (*board)[dst_tile_index] = CbTileState::BlackKnight as c_int,
+                TileState::RedMan => (*board)[dst_tile_index] = CbTileState::WhiteMan as c_int,
+                TileState::RedKnight => (*board)[dst_tile_index] = CbTileState::WhiteKnight as c_int
+            }
+        }
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Unit tests
 /// 
@@ -148,4 +171,17 @@ mod tests {
         }
 
     }
+
+    #[test]
+    fn checkers_board_2_cb_board_fefault() {
+        let my_board = CheckersBoard::new();
+        let mut output_cb: [c_int; BOARD_SIZE*BOARD_SIZE] = [0; BOARD_SIZE*BOARD_SIZE];
+        checkers_board_2_cb_board(&my_board, &mut output_cb);
+
+        let my_board2 = cb_board_2_checkers_board(&mut output_cb);
+
+        assert!(my_board.tiles == my_board2.tiles);
+
+    }
+
 }

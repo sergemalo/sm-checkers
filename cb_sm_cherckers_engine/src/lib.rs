@@ -38,17 +38,17 @@ pub struct CBmove {
     jumps: c_int,
     newpiece: c_int,
     oldpiece: c_int,
-    from: coor,
-    to: coor,
-    path: [coor; 12],
-    del: [coor; 12],
+    from: Coor,
+    to: Coor,
+    path: [Coor; 12],
+    del: [Coor; 12],
     delpiece: [c_int; 12]
 }
 
 // Define the coor struct
 #[repr(C)]
-pub struct coor {
-    // Define the fields of the coor struct here
+pub struct Coor {
+    // Define the fields of the Coor struct here
     x: c_int,
     y: c_int,
 }
@@ -168,12 +168,12 @@ pub extern "stdcall" fn getmove(
     br.game_board = cb_board_2_checkers_board(board);
     br.notify_observers();
 
-    unsafe {
 
-        (*board)[2] = 0x0;
-        (*board)[11] = 0x6;
-        
-    }
+    // Fake move
+    br.game_board.tiles[16] = TileState::BlackMan;
+    br.game_board.tiles[20] = TileState::Empty;
+
+    checkers_board_2_cb_board(&(br.game_board), board);
 
     let short_message = "Je pense...\n";
     let short_message_cstring = CString::new(short_message).expect("Failed to create reply CString");

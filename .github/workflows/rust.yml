@@ -30,7 +30,11 @@ jobs:
       run: |
         cd sm_checkers_base
         cargo test        
-
+    - name: Run tests in cb_sm_checkers_engine
+      run: |
+        cd cb_sm_checkers_engine
+        cargo test        
+      
 
 ## DOES NOT WORK UNDER WINDOWS
 #    - name: Run tests in all subdirectories

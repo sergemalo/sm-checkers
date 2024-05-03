@@ -170,8 +170,8 @@ pub extern "stdcall" fn getmove(
 
 
     // Fake move
-    br.game_board.tiles[16] = TileState::BlackMan;
-    br.game_board.tiles[20] = TileState::Empty;
+    br.game_board.tiles[15] = TileState::BlackMan;
+    br.game_board.tiles[11] = TileState::Empty;
 
     checkers_board_2_cb_board(&(br.game_board), board);
 

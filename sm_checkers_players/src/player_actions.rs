@@ -1,5 +1,6 @@
 use std::any::Any;
 use sm_checkers_base::player_colors::Color;
+use sm_checkers_base::movements::*;
 
 
 pub enum ActionType {
@@ -51,6 +52,20 @@ impl ActionMove {
             player_color,
             tiles: (*tiles).clone()
         }
+    }
+
+    pub fn to_movement(&self) -> Box<dyn Movement> {
+        if self.tiles.len() < 2 {
+            panic!("Cannot convert ActionMove to a Movement - it must have at least 2 tiles");
+        }
+        let src = self.tiles[0];
+        let dst = self.tiles[1];
+        if (self.tiles.len() == 2) &&
+            (((dst > src) && (dst - src) < 6) ||
+             ((dst < src) && (src - dst) < 6)) {
+            return Box::new(Shift::new(src, dst));
+        }
+        return Box::new(Jump::new(src, &(self.tiles[1..]).to_vec()));
     }
 }
 

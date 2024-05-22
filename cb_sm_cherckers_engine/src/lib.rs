@@ -59,6 +59,7 @@ use std::sync::{Arc, Mutex, Once};
 use std::rc::Rc;
 use std::cell::RefCell;
 use sm_checkers_base::checkers_board::*;
+use sm_checkers_players::player_bot_random::*;
 
 pub trait Singleton {
     fn get_instance() -> Arc<Mutex<Self>> where Self: Sized + 'static;
@@ -162,17 +163,34 @@ pub extern "stdcall" fn getmove(
 
     }
 
-    // Receive Board: Transform board to our reprensentation and notify all observers
+    // Receive Board
     let br = BoardReceiver::get_instance();
     let mut br = br.lock().unwrap();
+
+
+    // Temporary: for the moment, instantiate a random player every call
+    let mut color_player = Color::Black;
+    if color == WHITE {
+        color_player = Color::Red;
+    }
+    let player = Rc::new(RefCell::new(PlayerBotRandom::new("RANDOM BOT PLAYER", color_player)));
+    br.register_observer(player);
+
+
+    // Transform board to our reprensentation and notify all observers
     br.game_board = cb_board_2_checkers_board(board);
     br.notify_observers();
 
 
     // Fake move
-    br.game_board.tiles[15] = TileState::BlackMan;
-    br.game_board.tiles[11] = TileState::Empty;
-
+    //br.game_board.tiles[15] = TileState::BlackMan;
+    //br.game_board.tiles[11] = TileState::Empty;
+    let action = player.borrow().play_turn();
+    if let Some(ac_move) = ac.as_any().downcast_ref::<player_actions::ActionMove>() {
+        let movement = ac_move.to_movement();
+        CheckersRules::is_movement_valid(self, movement)?;
+        br.move_piece(movement).unwrap();
+    }
     checkers_board_2_cb_board(&(br.game_board), board);
 
     let short_message = "Je pense...\n";

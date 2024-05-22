@@ -4,7 +4,6 @@ use std::cell::RefCell;
 
 use sm_checkers_base::checkers_board::*;
 use sm_checkers_base::checkers_rules::*;
-use sm_checkers_base::movements::*;
 use sm_checkers_base::player_colors::Color;
 use sm_checkers_players::player_actions::ActionMove;
 
@@ -38,6 +37,7 @@ impl Subject for CheckersGame {
     }
 }
 
+
 pub struct CheckersGame {
     observers: Vec<Rc<RefCell<dyn GameBoardObserver>>>,
     game_board: CheckersBoard
@@ -51,56 +51,29 @@ impl CheckersGame {
         }
     }
 
+    pub fn is_game_over(&self, next_player_color: Color) -> bool {
+        return self.game_board.is_game_over(next_player_color);
+    }
+
     pub fn move_piece(&mut self, action: &ActionMove) -> Result<(), String> {
 
-        let res = self.is_move_valid(action)?;
-        if res.as_any().downcast_ref::<Shift>().is_some() {
-            if let Some(shift) = res.as_any().downcast_ref::<Shift>() {
-                self.move_src_to_dst(shift.from(), shift.to);
-            }
-        }
-        if res.as_any().downcast_ref::<Jump>().is_some() {
-            if let Some(jump) = res.as_any().downcast_ref::<Jump>() {
-                let tile_eaten = CheckersRules::get_eaten_tile_index(jump.from(), jump.to[0]);
-                self.game_board.tiles[tile_eaten] = TileState::Empty;
-                self.move_src_to_dst(jump.from(), *jump.to.last().unwrap());
-                for i in 0..jump.to.len() - 1 {
-                    let tile_eaten = CheckersRules::get_eaten_tile_index(jump.to[i], jump.to[i+1]);
-                    self.game_board.tiles[tile_eaten] = TileState::Empty;
-                    self.game_board.tiles[jump.to[i]] = TileState::Empty;
-                }
-            }
-        }
-
+        self.is_move_valid(action)?;
+        self.game_board.move_piece(&action.to_movement()).unwrap();
         self.notify_observers();
         return Ok(());
     }
-
-    fn move_src_to_dst(&mut self, src: usize, dst: usize) {
-        self.game_board.tiles[dst] = self.game_board.tiles[src];
-        if dst > 27 && self.game_board.tiles[dst] == TileState::BlackMan {
-            self.game_board.tiles[dst] = TileState::BlackKnight;
-        }
-        if dst < 4 && self.game_board.tiles[dst] == TileState::RedMan {
-            self.game_board.tiles[dst] = TileState::RedKnight;
-        }
-        self.game_board.tiles[src] = TileState::Empty;
-    }
-
-    fn is_move_valid(&mut self, action: &ActionMove) -> Result<Box<dyn Movement>, String> {
-        // Verify if the action has enough tiles
+    
+    pub fn is_move_valid(&self, action: &ActionMove) -> Result<(), String> {
         if (*action).tiles.len() < 2 {
             return Err("The action does not have at least two tiles (soruce and destination)".into());
         }
 
-        // Verify if tile indexes are in the correct range
         for t in &(*action).tiles {
             if *t > 31 {
                 return Err("Tile index is out of range.".into());
             }
         }
 
-        // Verify if the source tile of the action is the right color
         let src = (*action).tiles[0];
         if action.player_color == Color::Black {
             if (self.game_board.tiles[src] != TileState::BlackMan) && (self.game_board.tiles[src] != TileState::BlackKnight) {
@@ -113,52 +86,8 @@ impl CheckersGame {
             }
         }
         
-        // Verify if all destination tiles are empty
-        for (_index, &element) in (*action).tiles.iter().enumerate().skip(1) {
-            if self.game_board.tiles[element] != TileState::Empty {
-                return Err("Destination tile is not empty.".into());
-            }
-        }
-
-        // Verify if this is a shift, and if it is a valid shift
-        let src = (*action).tiles[0];
-        let dst = (*action).tiles[1];
-        if ((*action).tiles.len() == 2) &&
-            (((dst > src) && (dst - src) < 6) ||
-             ((dst < src) && (src - dst) < 6)) {
-            let cur_shift = Shift::new(src, dst);
-            //let possible_shifts = self.get_possible_shifts(src);
-            let possible_shifts = CheckersRules::get_possible_shifts(&self.game_board, src);
-            if !possible_shifts.contains(&cur_shift) {
-                return Err("Invalid shift.".into());
-            }
-            return Ok(Box::new(cur_shift));
-        }
-
-        // This is a jump. Verify if it is a valid jump
-        let the_jump = Jump::new(src, &((*action).tiles[1..]).to_vec());
-        if CheckersRules::is_jump_valid(&self.game_board, &the_jump) {
-            return Ok(Box::new(the_jump));            
-        }
-        return Err("Invalid action.".into());
+        return CheckersRules::is_movement_valid(&self.game_board, &action.to_movement());
     }
-
-
-    pub fn is_game_over(&self, next_player_color: Color) -> bool {
-        let pieces = CheckersRules::get_player_pieces_indexes(&self.game_board, next_player_color);
-        for p in pieces.iter() {
-            if CheckersRules::get_possible_shifts(&self.game_board, *p).len() > 0 {
-                return false
-            }
-        }
-        for p in pieces.iter() {
-            if CheckersRules::get_possible_jumps(&self.game_board, *p).len() > 0 {
-                return false
-            }
-        }
-        return true
-    }
-
 }
 
 
@@ -325,7 +254,7 @@ mod tests {
         let action = ActionMove::new(Color::Red, &vec![5, 1]);
         assert!(game.move_piece(&action).is_ok());
         assert!(game.game_board.tiles[1] == TileState::RedKnight);
-}
+    }
 
 
     #[test]
@@ -350,50 +279,6 @@ mod tests {
         game.game_board.tiles[10] = TileState::BlackKnight;
         let action = ActionMove::new(Color::Red, &vec![20, 13, 22, 15, 6]);
         assert!(game.is_move_valid(&action).is_ok());
-    }
-
-
-    #[test]
-    fn test_is_game_over() {
-        let mut game = CheckersGame::new();
-
-        // Test #1: default game
-        assert_eq!(game.is_game_over(Color::Black), false);
-        assert_eq!(game.is_game_over(Color::Red), false);
-
-        // Test #2: empty game: game is over
-        game.game_board.tiles.fill(TileState::Empty);
-        assert_eq!(game.is_game_over(Color::Black), true);
-        assert_eq!(game.is_game_over(Color::Red), true);
-
-        // Test #3: Only one man blocked
-        game.game_board.tiles.fill(TileState::Empty);
-        game.game_board.tiles[0] = TileState::BlackMan;
-        game.game_board.tiles[4] = TileState::RedMan;
-        game.game_board.tiles[5] = TileState::RedMan;
-        game.game_board.tiles[9] = TileState::RedMan;
-        assert_eq!(game.is_game_over(Color::Black), true);
-
-        game.game_board.tiles.fill(TileState::Empty);
-        game.game_board.tiles[1] = TileState::BlackMan;
-        game.game_board.tiles[5] = TileState::RedMan;
-        game.game_board.tiles[6] = TileState::RedMan;
-        game.game_board.tiles[8] = TileState::RedMan;
-        game.game_board.tiles[10] = TileState::RedMan;
-        assert_eq!(game.is_game_over(Color::Black), true);
-
-        game.game_board.tiles.fill(TileState::Empty);
-        game.game_board.tiles[3] = TileState::BlackMan;
-        game.game_board.tiles[7] = TileState::RedMan;
-        game.game_board.tiles[10] = TileState::RedMan;
-        assert_eq!(game.is_game_over(Color::Black), true);
-
-        game.game_board.tiles.fill(TileState::Empty);
-        game.game_board.tiles[4] = TileState::BlackMan;
-        game.game_board.tiles[6] = TileState::BlackMan;
-        game.game_board.tiles[8] = TileState::RedMan;
-        assert_eq!(game.is_game_over(Color::Black), false);
-
     }
 
 }

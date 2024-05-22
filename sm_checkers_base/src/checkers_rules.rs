@@ -8,6 +8,47 @@ pub struct CheckersRules {
 impl CheckersRules {
 
 
+    pub fn is_movement_valid(board: &CheckersBoard, movement: &Box<dyn Movement>) -> Result<(), String> {
+
+        if let Some(sh) = movement.as_any().downcast_ref::<Shift>() {
+
+            /* 
+            // Determine player color
+            let player_color = if (board.tiles[sh.from()] == TileState::BlackMan) || (board.tiles[sh.from()] == TileState::BlackKnight) {
+                Color::Black
+            }
+            else {
+                Color::Red
+            };
+            */
+
+            // Rule: if a jump is possible, the player is not allowed to make a shift
+            // For each piece of that color, verify if any jump is possible
+            for index in 0..32 {
+                if (board.tiles[index] == TileState::BlackMan) || (board.tiles[index] == TileState::BlackKnight) {
+                    if CheckersRules::get_possible_jumps(board, index).len() > 0 {
+                        return Err(("There is a possible jump.").into());
+                    }
+                }
+            }
+
+            let possible_shifts = CheckersRules::get_possible_shifts(&board, sh.from());
+            if !possible_shifts.contains(&sh) {
+                return Err("Invalid shift.".into());
+            }
+            return Ok(());
+        }
+
+
+        if let Some(ju) = movement.as_any().downcast_ref::<Jump>() {
+            if CheckersRules::is_jump_valid(board, ju) {
+                return Ok(());
+            }
+        }
+        return Err("Invalid Jump or Shift.".into());
+    }
+
+
     pub fn is_jump_valid(board: &CheckersBoard, jump: &Jump) -> bool {
         let cur_jump = Jump::new((*jump).from(), &vec![(*jump).to[0]]);
         let possible_jumps = CheckersRules::get_possible_jumps(board, (*jump).from());
@@ -28,7 +69,7 @@ impl CheckersRules {
         }
     }
 
-    // This methos assumes that the jump is valid
+    // This method assumes that the jump is valid
     // Otherwise it will panic
     pub fn get_eaten_tile_index(src: usize, dst: usize) -> usize {
         let delta = ( dst as i32 ) -  ( src as i32 );
@@ -1322,5 +1363,17 @@ mod tests {
     }
 
 
+    #[test]
+    fn test_is_move_invalid() {
+        let board = CheckersBoard::new();
+
+        let sh = Shift::new(28, 32);
+        let boxed_sh: Box<dyn Movement> = Box::new(sh);
+        assert!(CheckersRules::is_movement_valid(&board, &boxed_sh).is_err());
+
+        // NOTE:
+        // The test above was imported from checkers_game.rs.
+        // We could import all of them and test all of them but it's not worth it.
+    }
     // more tests
 }
